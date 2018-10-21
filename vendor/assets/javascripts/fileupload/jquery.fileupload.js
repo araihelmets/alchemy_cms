@@ -1,5 +1,5 @@
 /*
- * jQuery File Upload Plugin
+ * jQuery File Upload Plugin 5.42.3
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -12,13 +12,13 @@
 /* jshint nomen:false */
 /* global define, require, window, document, location, Blob, FormData */
 
-;(function (factory) {
+(function (factory) {
     'use strict';
     if (typeof define === 'function' && define.amd) {
         // Register as an anonymous AMD module:
         define([
             'jquery',
-            'jquery-ui/widget'
+            'jquery.ui.widget'
         ], factory);
     } else if (typeof exports === 'object') {
         // Node/CommonJS:
@@ -277,8 +277,7 @@
             // The following are jQuery ajax settings required for the file uploads:
             processData: false,
             contentType: false,
-            cache: false,
-            timeout: 0
+            cache: false
         },
 
         // A list of options that require reinitializing event listeners and/or
@@ -652,7 +651,7 @@
             data.process = function (resolveFunc, rejectFunc) {
                 if (resolveFunc || rejectFunc) {
                     data._processQueue = this._processQueue =
-                        (this._processQueue || getPromise([this])).then(
+                        (this._processQueue || getPromise([this])).pipe(
                             function () {
                                 if (data.errorThrown) {
                                     return $.Deferred()
@@ -660,7 +659,7 @@
                                 }
                                 return getPromise(arguments);
                             }
-                        ).then(resolveFunc, rejectFunc);
+                        ).pipe(resolveFunc, rejectFunc);
                 }
                 return this._processQueue || getPromise([this]);
             };
@@ -945,9 +944,9 @@
                 if (this.options.limitConcurrentUploads > 1) {
                     slot = $.Deferred();
                     this._slots.push(slot);
-                    pipe = slot.then(send);
+                    pipe = slot.pipe(send);
                 } else {
-                    this._sequence = this._sequence.then(send, send);
+                    this._sequence = this._sequence.pipe(send, send);
                     pipe = this._sequence;
                 }
                 // Return the piped Promise object, enhanced with an abort method,
@@ -984,10 +983,7 @@
                 fileSet,
                 i,
                 j = 0;
-            if (!filesLength) {
-                return false;
-            }
-            if (limitSize && files[0].size === undefined) {
+            if (limitSize && (!filesLength || files[0].size === undefined)) {
                 limitSize = undefined;
             }
             if (!(options.singleFileUploads || limit || limitSize) ||
@@ -1046,19 +1042,13 @@
 
         _replaceFileInput: function (data) {
             var input = data.fileInput,
-                inputClone = input.clone(true),
-                restoreFocus = input.is(document.activeElement);
+                inputClone = input.clone(true);
             // Add a reference for the new cloned file input to the data argument:
             data.fileInputClone = inputClone;
             $('<form></form>').append(inputClone)[0].reset();
             // Detaching allows to insert the fileInput on another form
             // without loosing the file input value:
             input.after(inputClone).detach();
-            // If the fileInput had focus before it was detached,
-            // restore focus to the inputClone.
-            if (restoreFocus) {
-                inputClone.focus();
-            }
             // Avoid memory leaks with the detached file input:
             $.cleanData(input.unbind('remove'));
             // Replace the original file input element in the fileInput
@@ -1080,8 +1070,6 @@
         _handleFileTreeEntry: function (entry, path) {
             var that = this,
                 dfd = $.Deferred(),
-                entries = [],
-                dirReader,
                 errorHandler = function (e) {
                     if (e && !e.entry) {
                         e.entry = entry;
@@ -1109,7 +1097,8 @@
                             readEntries();
                         }
                     }, errorHandler);
-                };
+                },
+                dirReader, entries = [];
             path = path || '';
             if (entry.isFile) {
                 if (entry._file) {
@@ -1140,7 +1129,7 @@
                 $.map(entries, function (entry) {
                     return that._handleFileTreeEntry(entry, path);
                 })
-            ).then(function () {
+            ).pipe(function () {
                 return Array.prototype.concat.apply(
                     [],
                     arguments
@@ -1209,7 +1198,7 @@
             return $.when.apply(
                 $,
                 $.map(fileInput, this._getSingleFileInputFiles)
-            ).then(function () {
+            ).pipe(function () {
                 return Array.prototype.concat.apply(
                     [],
                     arguments
@@ -1310,10 +1299,6 @@
             this._off(this.options.dropZone, 'dragenter dragleave dragover drop');
             this._off(this.options.pasteZone, 'paste');
             this._off(this.options.fileInput, 'change');
-        },
-
-        _destroy: function () {
-            this._destroyEventHandlers();
         },
 
         _setOption: function (key, value) {

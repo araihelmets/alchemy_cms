@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 module Alchemy
@@ -8,11 +6,8 @@ module Alchemy
   end
 
   describe Modules do
-    let(:controller) { ModulesTestController.new }
-
-    let(:alchemy_modules) do
-      YAML.load_file(File.expand_path('../../config/alchemy/modules.yml', __dir__))
-    end
+    let(:controller)      { ModulesTestController.new }
+    let(:alchemy_modules) { YAML.load_file(File.expand_path('../../../config/alchemy/modules.yml', __FILE__)) }
 
     describe '#module_definition_for' do
       subject { controller.module_definition_for(name) }
@@ -47,7 +42,7 @@ module Alchemy
       context 'with nil given as name' do
         let(:name) { nil }
         it 'raises an error' do
-          expect { subject }.to raise_error(ArgumentError)
+          expect { subject }.to raise_error('Could not find module definition for ')
         end
       end
     end

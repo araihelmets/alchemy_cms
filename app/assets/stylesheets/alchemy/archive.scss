@@ -6,7 +6,7 @@ div#image_assign_filter_and_image_sizing {
 #picture_archive {
 
   .selected_item_tools {
-    margin: -2*$default-padding;
+    margin: -4*$default-padding;
     border-bottom: 1px solid $default-border-color;
     margin-bottom: 4*$default-padding;
     padding: 4*$default-padding;
@@ -14,65 +14,102 @@ div#image_assign_filter_and_image_sizing {
   }
 }
 
-.thumbnail_background {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: $thumbnail-background-color;
-  width: 100%;
-  height: 120px;
+#zoomed_picture_background {
+  text-align: center;
+  height: 100%;
+
+  .spinner {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+  }
+
+  .zoomed_picture {
+    max-width: 100%;
+    max-height: 100%;
+    margin-bottom: -4px;
+  }
 }
 
 .picture_thumbnail {
-  margin: 2*$default-margin;
+  padding: $default-padding;
+  margin: 2px 1px 2px 2px;
   background-color: #fff;
+  float: none;
+  display: inline;
   display: inline-block;
+  border: 1px solid #c0c0c0;
   position: relative;
-  box-shadow: 0 0 0 1px $default-border-color;
-  width: 160px;
+  @extend %rounded-border;
 
-  img {
-    width: auto;
-    height: auto;
-    max-width: 100%;
-    max-height: 100%;
+  .thumbnail_background {
+    @extend %thumbnail-background;
+    width: 160px;
+    height: 120px;
   }
 
   .picture_name {
+    height: 14px;
     display: block;
-    width: 100%;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
-    bottom: 0;
+    position: absolute;
+    bottom: 1px;
     left: 0;
-    line-height: 2;
-    padding: 0 $default-padding;
-    text-overflow: ellipsis;
+    font-family: "Courier New", Courier, mono;
+    line-height: 11px;
+    padding: 2px 0;
+    margin-right: 4px;
+    margin-left: 4px;
   }
 
   &.small {
     width: 80px;
+    height: 80px;
+
+    .picture_name {
+      width: 80px;
+    }
 
     .thumbnail_background {
+      width: 80px;
       height: 60px;
+    }
+  }
+
+  &.medium {
+    width: 160px;
+    height: 140px;
+
+    .picture_name {
+      width: 160px;
+    }
+
+    .thumbnail_background {
+      width: 160px;
+      height: 120px;
     }
   }
 
   &.large {
     width: 240px;
+    height: 200px;
+
+    .picture_name {
+      width: 240px;
+    }
 
     .thumbnail_background {
+      width: 240px;
       height: 180px;
     }
   }
 
   &:hover {
 
-    .picture_tool, .picture_tags {
-      visibility: visible;
-      opacity: 1;
+    .picture_tool {
+      display: block;
     }
   }
 }
@@ -80,10 +117,19 @@ div#image_assign_filter_and_image_sizing {
 #pictures {
   margin-right: 232px;
   padding-bottom: 60px;
-  overflow: hidden;
 
-  .thumbnail_background {
-    @include zoom-in;
+  .picture_thumbnail {
+    margin: 0 8px 8px 0;
+    display: inline-block;
+    float: none;
+
+    .thumbnail_background {
+      cursor: -webkit-zoom-in;
+      cursor: -moz-zoom-in;
+      cursor: -ms-zoom-in;
+      cursor: -o-zoom-in;
+      cursor: image-url('alchemy/lupe.cur'), zoom-in, pointer;
+    }
   }
 }
 
@@ -98,29 +144,25 @@ div.assign_image_list_image {
 }
 
 .picture_tool {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   position: absolute;
   background-color: white;
-  top: $default-padding;
-  padding: $default-padding / 2;
+  top: 3px;
+  padding: 1px;
   z-index: 10;
-  text-align: center;
-  border-radius: $default-border-radius;
-  box-shadow: 0 0 1px $dark-gray;
+  display: none;
 
   &.visible {
-    visibility: visible;
-    opacity: 1;
-  }
-
-  &.hidden {
-    // Overwrite the `.hidden { display: none }` style
     display: block;
   }
 
+  &.hidden {
+    display: none;
+  }
+
   &.select {
-    left: $default-padding;
+    left: 4px;
 
     input {
       margin: 0;
@@ -129,7 +171,31 @@ div.assign_image_list_image {
   }
 
   &.delete {
-    right: $default-padding;
+    right: 4px;
+
+    a {
+      background: image-url('alchemy/icons.png') no-repeat -63px -72px;
+    }
+  }
+
+  &.edit {
+    top: auto;
+    right: 4px;
+    bottom: 24px;
+
+    a {
+      background: image-url('alchemy/icons.png') no-repeat -160px -167px;
+    }
+  }
+
+  &.info {
+    top: auto;
+    left: 4px;
+    bottom: 24px;
+
+    a {
+      background: image-url('alchemy/icons.png') no-repeat -64px -168px;
+    }
   }
 
   a {
@@ -140,30 +206,15 @@ div.assign_image_list_image {
   }
 }
 
-.picture_tags {
-  overflow: hidden;
-  position: absolute;
-  bottom: 22px;
-  left: 0;
-  width: 100%;
-  max-height: 80%;
-  padding: $default-padding;
-  pointer-events: none;
-}
-
-.picture_tags, .picture_tool {
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity $transition-duration;
-}
-
 div#library_sidebar {
+  @include box-sizing(border-box);
   position: fixed;
   border-left: 1px solid $default-border-color;
   top: 0;
   right: 0;
   width: 232px;
-  padding: 86px 4*$default-padding 0 4*$default-padding;
+  padding-top: 96px;
+  padding: 84px 4*$default-padding 0 4*$default-padding;
   height: 100%;
   z-index: 3;
   background-color: $light-gray;
@@ -184,6 +235,74 @@ div#filter_bar {
   }
 }
 
+#tag_list {
+  @include box-sizing(border-box);
+  height: 100%;
+  padding-bottom: 138px;
+
+  &.filtered {
+    padding-bottom: 164px;
+  }
+
+  &.with_filter_bar {
+    padding-bottom: 218px;
+
+    &.filtered {
+      padding-bottom: 244px;
+    }
+  }
+
+  .js_filter_field_box {
+    position: absolute;
+    right: auto;
+    top: auto;
+    width: 200px;
+    z-index: 1100;
+
+    input {
+      width: 200px;
+      background-color: #f8f8f8;
+    }
+
+    label { display: none }
+  }
+
+  .js_filter_field_clear {
+    right: 4px;
+  }
+
+  ul {
+    @include box-sizing(border-box);
+    list-style-type: none;
+    padding: 0;
+    margin: 40px 0 4px 0;
+    height: 100%;
+    width: 200px;
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    li {
+      @include tag-base;
+      display: block;
+
+      &:first-child { margin-top: 0 }
+
+      a {
+        text-decoration: none;
+        display: block;
+      }
+
+      &:hover { background-color: $very-light-blue }
+
+      &.active {
+        background-color: $dark-gray;
+
+        a, &:before { color: $light-gray }
+      }
+    }
+  }
+}
+
 .alchemy-dialog-body {
 
   #library_sidebar {
@@ -193,14 +312,58 @@ div#filter_bar {
 
 #assign_image_list, #assign_file_list {
   position: relative;
-  height: 548px;
+  height: 519px;
 }
 
 #assign_image_list {
   padding-right: 244px;
+
+  #tag_list ul {
+    height: 316px;
+  }
+
+  &.filtered #tag_list ul {
+    height: 292px;
+  }
+}
+
+#assign_file_list {
+
+  #tag_list ul {
+    height: 396px;
+  }
+
+  &.filtered #tag_list ul {
+    height: 372px;
+  }
+}
+
+div#pictures_page_list {
+  max-height: 100px;
+  overflow: auto;
+
+  h3 { padding: 0 $default-padding }
+
+  ul {
+    @include form-value-display;
+    list-style-type: none;
+  }
+
+  li {
+    padding: 0 $default-padding;
+
+    &.even { background: #F7F7F7 }
+
+    &:last-child { margin-bottom: 0 }
+  }
 }
 
 #overlay_file_list {
+
+  &.with_tag_list {
+    padding-right: 234px;
+  }
+
   .assign_file_file {
     display: block;
     margin-bottom: 4px;
@@ -220,7 +383,7 @@ div#filter_bar {
       display: block;
       line-height: 25px;
       text-decoration: none;
-      padding: $default-padding 2*$default-padding;
+      padding: 0px 4px 2px 4px;
     }
 
     .icon {
@@ -230,6 +393,44 @@ div#filter_bar {
   }
 }
 
-#all_files td.name a {
-  @include zoom-in;
+.picture_tags {
+  @include box-sizing(border-box);
+  width: 50%;
+  max-height: 100%;
+  position: absolute;
+  top: 16px;
+  left: 0;
+  padding: $default-padding;
+  pointer-events: none;
+  display: none;
+}
+
+.picture_thumbnail:hover .picture_tags {
+  display: block;
+}
+
+.tag {
+  @include inline-block;
+  @extend %rounded-border;
+  padding: $default-padding 2*$default-padding $default-padding 4*$default-padding;
+  margin: $default-margin/2 0;
+  background-color: rgba($medium-gray, 0.85);
+  color: $text-color;
+  overflow: hidden;
+  position: relative;
+  pointer-events: none;
+  font-size: 10px;
+
+  &:before {
+    position: absolute;
+    left: $default-padding;
+    top: 2*$default-padding;
+    font-family: 'Alchemy Icons';
+    @extend .icon-tag:before;
+    line-height: 6px;
+  }
+}
+
+table.list#tag_list .tag {
+  padding: 0;
 }

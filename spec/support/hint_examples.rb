@@ -1,9 +1,8 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 module Alchemy
   shared_examples_for "having a hint" do
+
     describe '#hint' do
       context 'with hint as text' do
         before do
@@ -18,7 +17,7 @@ module Alchemy
       context 'with hint set to true' do
         before do
           expect(subject).to receive(:definition).and_return({'hint' => true})
-          expect(Alchemy).to receive(:t).and_return('The hint')
+          expect(I18n).to receive(:t).and_return('The hint')
         end
 
         it "returns the hint from translation" do
@@ -26,5 +25,6 @@ module Alchemy
         end
       end
     end
+
   end
 end

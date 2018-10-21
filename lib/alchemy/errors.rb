@@ -1,8 +1,7 @@
-# frozen_string_literal: true
-
 # Custom error classes.
 #
 module Alchemy
+
   class CellDefinitionError < StandardError
     # Raised if no cell definition can be found.
   end
@@ -12,25 +11,9 @@ module Alchemy
   end
 
   class DefaultLanguageNotFoundError < StandardError
-    # Raised if no default language configuration can be found.
+    # Raised if no default language can be found.
     def message
-      "No default language configuration found!" \
-        " Please ensure that you have a 'default_language' defined in Alchemy configuration file."
-    end
-  end
-
-  class DefaultSiteNotFoundError < StandardError
-    # Raised if no default site configuration can be found.
-    def message
-      "No default site configuration found!" \
-        " Please ensure that you have a 'default_site' defined in Alchemy configuration file."
-    end
-  end
-
-  class DefaultLanguageNotDeletable < StandardError
-    # Raised if one tries to delete the default language.
-    def message
-      "Default language is not deletable!"
+      "No default language found! Please run the `bin/rake db:seed` task."
     end
   end
 
@@ -52,27 +35,8 @@ module Alchemy
     end
   end
 
-  # Raised if calling +image_file+ on a Picture object returns nil.
-  class MissingImageFileError < StandardError; end
-
-  # Raised if calling +image_file+ on a Picture object returns nil.
-  class WrongImageFormatError < StandardError
-    def initialize(image, requested_format)
-      @image = image
-      @requested_format = requested_format
-    end
-
-    def message
-      allowed_filetypes = Alchemy::Picture.allowed_filetypes.map(&:upcase).to_sentence
-      "Requested image format (#{@requested_format.inspect}) for #{@image.inspect} is not one of allowed filetypes (#{allowed_filetypes})."
-    end
-  end
-
-  class NotMountedError < StandardError
-    # Raised if Alchemy is not properly mounted in the apps routes file.
-    def message
-      "Alchemy mount point not found! Please run `bin/rake alchemy:mount'"
-    end
+  class MissingImageFileError < StandardError
+    # Raised if calling +image_file+ on a Picture object returns nil.
   end
 
   class PictureInUseError < StandardError
@@ -82,7 +46,7 @@ module Alchemy
   class TinymceError < StandardError; end
 
   class UpdateServiceUnavailable < StandardError
-    # Raised if no successful connection to GitHub was possible
+    # Raised it no succesful connection to GitHub was possible
     def message
       "The update service is temporarily unavailable!"
     end

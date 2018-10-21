@@ -7,14 +7,11 @@ Alchemy.GUI =
   init: (scope) ->
     Alchemy.SelectBox(scope)
     Alchemy.Datepicker(scope)
-    Alchemy.Tooltips(scope)
     Alchemy.Buttons.observe(scope)
-    # Dialog links use event delegation and therefore do not
-    # need to be re-initialized after dom elements get replaced
-    unless scope
-      Alchemy.watchForDialogs()
+    Alchemy.watchForDialogs(scope)
     Alchemy.Hotkeys(scope)
     Alchemy.ListFilter(scope)
+    Alchemy.Spinner.watch(scope)
     Alchemy.Autocomplete.tags(scope)
     $('[data-alchemy-char-counter]', scope).each ->
       new Alchemy.CharCounter(this)
@@ -23,3 +20,4 @@ Alchemy.GUI =
     Alchemy.ElementDirtyObserver($el)
     Alchemy.GUI.init($el)
     Alchemy.ImageLoader($el)
+    Alchemy.Spinner.watch($el)

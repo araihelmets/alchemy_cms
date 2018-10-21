@@ -1,46 +1,57 @@
-<% dialog_link = link_to_dialog render_icon(:file, style: 'regular'),
+<% cache(content) do %>
+
+<% dialog_link = link_to_dialog('',
   alchemy.admin_attachments_path(
     content_id: content.id,
-    only: content.settings_value(:only, local_assigns.fetch(:options, {})),
-    except: content.settings_value(:except, local_assigns.fetch(:options, {})),
-    options: local_assigns.fetch(:options, {})
+    only: content_settings_value(content, :only,
+      local_assigns.fetch(:options, {})),
+    except: content_settings_value(content, :except,
+      local_assigns.fetch(:options, {})),
+    options: local_assigns.fetch(:options, {}).to_json
   ),
   {
-    title: Alchemy.t(:assign_file),
+    title: _t(:assign_file),
     size: '780x585',
     padding: false
   },
-  class: 'file_icon',
-  title: Alchemy.t(:assign_file) %>
+  {
+    class: 'assign_file',
+    title: _t(:assign_file)
+  }
+) %>
 
 <div class="content_editor essence_file" id="<%= content.dom_id %>" data-content-id="<%= content.id %>">
-  <%= content_label(content) %>
+  <%= label_and_remove_link(content) %>
   <div class="file" id="file_<%= content.id %>">
+    <div class="file_icon">
     <% if content.ingredient %>
-      <div class="file_icon">
-        <%= render_icon(content.ingredient.icon_css_class) %>
-      </div>
+      <%= render_icon(content.ingredient.icon_css_class) %>
     <% else %>
       <%= dialog_link %>
     <% end %>
+    </div>
     <div class="file_name">
       <%= content.ingredient.try(:name) ||
-        ("&#x2190;" + Alchemy.t(:assign_file_from_archive)).html_safe %>
+        ("&#x2190;" + _t(:assign_file_from_archive)).html_safe %>
     </div>
     <div class="essence_file_tools">
       <%= dialog_link %>
-      <%= link_to_dialog render_icon(:edit),
+      <%= link_to_dialog '',
         alchemy.edit_admin_essence_file_path(
           id: content.essence.id,
-          options: local_assigns.fetch(:options, {})
+          options: local_assigns.fetch(:options, {}).to_json
         ),
         {
-          title: Alchemy.t(:edit_file_properties),
-          size: '400x215'
+          title: _t(:edit_file_properties),
+          size: '400x165'
         },
-        title: Alchemy.t(:edit_file_properties) %>
+        class: 'edit_file',
+        title: _t(:edit_file_properties) %>
     </div>
-    <%= hidden_field_tag content.form_field_name(:attachment_id),
-      content.ingredient && content.ingredient.id %>
+    <% if content.ingredient %>
+      <%= hidden_field_tag content.form_field_name(:attachment_id),
+        content.ingredient.id %>
+    <% end %>
   </div>
 </div>
+<% end %>

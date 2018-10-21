@@ -1,60 +1,61 @@
 <li class="page_level_<%= layoutpage.level %>" id="page_<%= layoutpage.id %>">
-  <div class="sitemap_page<%= layoutpage.locked? ? ' locked' : '' %>">
+  <div class="sitemap_page<%= layoutpage.locked ? ' locked' : '' %>">
     <div class="sitemap_left_images">
-    <% if layoutpage.definition.blank? %>
-      <%= page_layout_missing_warning %>
+    <% if layoutpage.layout_description.blank? %>
+      <span class="inline warning icon" title="<%= _t(:page_layout_description_missing) %>"></span>
     <% else %>
-      <i class="icon far fa-file fa-lg"></i>
+      <%= render_icon(:page) %>
     <% end %>
     </div>
     <div class="sitemap_right_tools">
-    <%- if can?(:configure, layoutpage) -%>
-      <div class="button_with_label sitemap_tool">
-        <%= link_to_dialog(
-          render_icon(:cog),
-          alchemy.edit_admin_layoutpage_path(layoutpage),
-          {
-            title: Alchemy.t(:edit_page_properties),
-            size: '410x170'
-          }
-        ) -%>
-        <label class="center"><%= Alchemy.t(:edit_page_properties) %></label>
-      </div>
-    <%- end -%>
-    <%- if can?(:copy, layoutpage) -%>
-      <div class="button_with_label sitemap_tool">
+      <%- if can?(:configure, layoutpage) -%>
+      <%= link_to_dialog(
+        render_icon('configure_page'),
+        alchemy.edit_admin_layoutpage_path(layoutpage),
+        {
+          title: _t(:edit_page_properties),
+          size: '410x170'
+        },
+        class: 'sitemap_tool',
+        title: _t(:edit_page_properties)
+      ) -%>
+      <%- end -%>
+      <span class="sitemap_sitetools">
+      <%- if can?(:copy, layoutpage) -%>
         <%= link_to(
-          render_icon(:copy),
+          render_icon("copy_page"),
           alchemy.insert_admin_clipboard_path(
             remarkable_type: layoutpage.class.name.demodulize.underscore.pluralize,
             remarkable_id: layoutpage.id
           ),
           remote: true,
-          method: 'post'
+          method: 'post',
+          class: "sitemap_tool",
+          title: _t(:copy_page)
         ) %>
-        <label class="center"><%= Alchemy.t(:copy_page) %></label>
-      </div>
-    <%- end -%>
-    <%- if can?(:destroy, layoutpage) -%>
-      <div class="button_with_label sitemap_tool">
+      <%- end -%>
+      <%- if can?(:destroy, layoutpage) -%>
         <%= link_to_confirm_dialog(
-          render_icon(:minus),
-          Alchemy.t(:confirm_to_delete_page),
+          render_icon('delete_page'),
+          _t(:confirm_to_delete_page),
           url_for(
             controller: 'pages',
             action: 'destroy',
             id: layoutpage.id
-          )
+          ),
+          {
+            class: "sitemap_tool",
+            title: _t(:delete_page)
+          }
         ) -%>
-        <label class="left"><%= Alchemy.t(:delete_page) %></label>
-      </div>
-    <%- end -%>
+      <%- end -%>
+      </span>
     </div>
-    <div class="sitemap_sitename without-status">
+    <div class="sitemap_sitename">
       <%= link_to(
         layoutpage.name,
         alchemy.edit_admin_page_path(layoutpage),
-        title: Alchemy.t(:edit_page),
+        title: _t(:edit_page),
         class: "sitemap_pagename_link #{cycle('even', 'odd')}"
       ) -%>
     </div>

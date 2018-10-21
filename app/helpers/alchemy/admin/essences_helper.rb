@@ -1,8 +1,7 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Admin
     module EssencesHelper
+
       include Alchemy::EssencesHelper
       include Alchemy::Admin::ContentsHelper
 
@@ -21,7 +20,7 @@ module Alchemy
       #
       def render_essence_editor_by_name(element, name, options = {}, html_options = {})
         if element.blank?
-          return warning('Element is nil', Alchemy.t(:no_element_given))
+          return warning('Element is nil', _t(:no_element_given))
         end
         content = element.content_by_name(name)
         if content.nil?
@@ -43,7 +42,7 @@ module Alchemy
       #   Method that is called on the page object to get the value that is passed with the params of the form.
       #
       def pages_for_select(pages = nil, selected = nil, prompt = "Choose page", page_attribute = :id)
-        values = [[Alchemy.t(prompt), ""]]
+        values = [[_t(prompt), ""]]
         pages ||= begin
           nested = true
           Language.current.pages.published.order(:lft)
@@ -58,28 +57,27 @@ module Alchemy
         render 'alchemy/admin/contents/missing', {element: element, name: name, options: options}
       end
 
-      # Renders a thumbnail for given EssencePicture content with correct cropping and size
-      def essence_picture_thumbnail(content, options = {})
-        picture = content.ingredient
-        essence = content.essence
-
-        return if picture.nil?
-
+      def essence_picture_thumbnail(content, options)
+        return if content.ingredient.blank?
+        crop = !(content.essence.crop_size.blank? && content.essence.crop_from.blank?) ||
+          (content_settings_value(content, :crop, options) == true || content_settings_value(content, :crop, options) == "true")
+        image_options = {
+          size: content.essence.thumbnail_size(content.essence.render_size.blank? ? content_settings_value(content, :size, options) : content.essence.render_size, crop),
+          crop_from: content.essence.crop_from.blank? ? nil : content.essence.crop_from,
+          crop_size: content.essence.crop_size.blank? ? nil : content.essence.crop_size,
+          crop: crop ? 'crop' : nil,
+          upsample: content_settings_value(content, :upsample, options)
+        }
         image_tag(
-          essence.thumbnail_url(options),
-          alt: picture.name,
+          alchemy.thumbnail_path({
+            id: content.ingredient.id,
+            name: content.ingredient.urlname,
+            sh: content.ingredient.security_token(image_options)
+          }.merge(image_options)),
+          alt: content.ingredient.name,
           class: 'img_paddingtop',
-          title: Alchemy.t(:image_name) + ": #{picture.name}"
+          title: _t(:image_name) + ": #{content.ingredient.name}"
         )
-      end
-
-      # Size value for edit picture dialog
-      def edit_picture_dialog_size(content, options = {})
-        if content.settings_value(:caption_as_textarea, options)
-          content.settings_value(:sizes, options) ? '380x320' : '380x300'
-        else
-          content.settings_value(:sizes, options) ? '380x290' : '380x255'
-        end
       end
 
       private
@@ -116,6 +114,7 @@ module Alchemy
           page.name
         end
       end
+
     end
   end
 end

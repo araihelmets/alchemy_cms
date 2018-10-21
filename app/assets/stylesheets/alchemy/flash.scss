@@ -2,7 +2,7 @@ div#flash_notices {
   position: fixed;
   right: 0;
   z-index: 400000;
-  width: 400px;
+  width: 348px;
   top: 0;
 
   .flash.error {
@@ -10,42 +10,33 @@ div#flash_notices {
     padding-right: 24px;
 
     &:before {
-      content: fa-content($fa-var-times);
       position: absolute;
       right: 2*$default-padding;
-      top: 11px;
-      font-size: $small-font-size;
-      font-family: 'Font Awesome 5 Free';
+      top: 2*$default-padding;
+      @extend .icon-cross:before;
+      font-size: 14px;
+      font-family: 'Alchemy Icons';
     }
   }
 }
 
 div.flash {
-  border-radius: $default-border-radius;
-  opacity: 0.95;
+  @extend %rounded-border;
+  @include opacity(0.95);
   padding: 8px 8px 8px 30px;
   font-weight: bold;
   border-width: 1px;
   border-style: solid;
   z-index: 1000;
-  margin: $default-margin $default-margin 2*$default-margin;
+  margin: $default-margin;
   position: relative;
-  min-height: 2.6em;
+  min-height: 1.3em;
   word-break: break-all;
-  transition-property: opacity, transform;
-  transition-duration: 0.4s;
 
-  .icon {
+  span.icon {
     position: absolute;
-    top: 10px;
+    top: 8px;
     left: 8px;
-    color: inherit;
-  }
-
-  &.dismissed {
-    display: block;
-    opacity: 0;
-    transform: translate3d(0, -100%, 0);
   }
 
   &.notice {

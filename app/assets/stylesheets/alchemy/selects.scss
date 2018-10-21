@@ -1,104 +1,79 @@
-$medium-select-box-width: 90px;
-
 select {
-  @include button-defaults(
-    $background-color: $form-field-background-color,
-    $hover-color: $form-field-background-color,
-    $hover-border-color: darken($default-border-color, 10%),
-    $padding: 0 2*$default-padding,
-    $border: 1px solid $default-border-color,
-    $box-shadow: none,
-    $color: $text-color,
-    $margin: 0);
-  height: $form-field-height;
+  @extend %button-defaults;
+  height: 29px;
   padding: 0.4em 0.6em;
-  max-width: 100%;
-  width: auto;
-  font-weight: normal;
-  vertical-align: middle;
-
-  &.alchemy_selectbox.medium {
-    width: $medium-select-box-width;
-  }
 }
 
 .select2-container {
+
   &.alchemy_selectbox {
+
+    text-shadow: #FFF 0px 1px 0px;
+
     .select2-choice {
-      height: $form-field-height;
-      @include button-defaults(
-        $background-color: $form-field-background-color,
-        $hover-color: $form-field-background-color,
-        $hover-border-color: darken($default-border-color, 10%),
-        $padding: $form-field-padding,
-        $border: 1px solid $default-border-color,
-        $box-shadow: none,
-        $color: $text-color,
-        $margin: 0);
-      background-image: none;
-      display: block;
-      font-weight: normal;
+      height: 27px;
+      line-height: 27px;
+      @include sassy-button-gradient('simple', $sb-base-color, $sb-second-color, $sb-text-color, $sb-text-style, $sb-pseudo-states);
+      border-color: $button-border-color;
       text-align: left;
+      border-radius: $default-border-radius;
 
       .select2-arrow {
-        top: 0;
-        width: $form-field-height;
-        height: $form-field-height;
+        top: 2px;
+        width: 20px;
+        height: 23px;
+        line-height: 23px;
         background: transparent;
-        border-left: 0 none;
+        border-left: 1px solid #CACACA;
 
         b {
-          @extend .fas;
+          @extend .icon-menu;
+          width: 18px;
+          line-height: 23px;
           background-image: none;
-          opacity: $addon-icon-opacity;
+        }
+      }
+    }
 
-          &:before {
-            content: fa-content($fa-var-caret-down);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+    &.select2-dropdown-open {
+      .select2-choice .select2-arrow b {
+        background-position: -17px 0px;
+      }
+    }
+
+    &.tiny {
+
+      .select2-choice {
+        height: 18px;
+        line-height: 18px;
+
+        .select2-arrow {
+          width: 14px;
+          height: 14px;
+
+          b {
+            line-height: 4px;
+            width: 12px;
+            font-size: 10px;
           }
+        }
+      }
+
+      &.select2-dropdown-open {
+        .select2-choice .select2-arrow b {
+          background-position: -20px -5px;
         }
       }
     }
 
     &.medium {
-      width: $medium-select-box-width;
+      width: 90px;
     }
 
     &.select2-container-active {
 
       .select2-choice, .select2-choices {
-        @include default-focus-style($box-shadow: 0 0 0 1px $focus-color);
-      }
-    }
-
-    &.select2-container-disabled {
-
-      &:hover {
-        + .with-hint > .hint-bubble {
-          @include hint-hover-style;
-          top: 10px;
-        }
-      }
-
-      + .with-hint > .hint-bubble {
-        top: 0;
-      }
-
-      .select2-choice, .select2-choice:hover {
-        background-image: none;
-        background-color: $light-gray;
-        box-shadow: none;
-        border-color: $border-inset-color;
-        cursor: not-allowed;
-
-        .select2-arrow {
-          border-color: $border-inset-color;
-
-          b { color: $border-inset-color; }
-        }
+        @extend %blue-focus-style;
       }
     }
   }
@@ -109,7 +84,7 @@ select {
     &.select2-container-active {
 
       .select2-choices {
-        @include default-focus-style($box-shadow: 0 0 0 1px $focus-color);
+        @extend %blue-focus-style;
       }
     }
 
@@ -123,25 +98,15 @@ select {
         padding: 4px 24px 4px 8px;
         background-image: none;
         border: 0 none;
-        box-shadow: none;
-        color: $text-color;
+        @include box-shadow(none);
       }
 
       .select2-search-choice-close {
-        @extend .fas;
-        @extend .fa-fw;
         left: auto;
-        right: 5px;
-        top: 5px;
+        right: 4px;
+        top: 6px;
         background: none;
-        font-size: $small-font-size;
-        text-decoration: none;
-
-        &:before {
-          @extend .fa-xs;
-          content: fa-content($fa-var-times);
-          opacity: $addon-icon-opacity;
-        }
+        @extend .icon-cross;
 
         &:hover {
           color: $text-color;
@@ -152,11 +117,18 @@ select {
         height: 29px;
 
         input {
-          color: $form-field-text-color;
-          padding: 3px 6px;
-          margin: 0;
+          color: $text-color;
+          padding: $default-padding 6px;
         }
       }
+    }
+  }
+}
+
+.tag_list {
+  .select2-container.select2-container-multi {
+    .select2-search-choice {
+      @include tag-base($margin: 4px, $padding: 4px 24px);
     }
   }
 }
@@ -192,8 +164,8 @@ select {
       padding: 4px 0;
 
       &.select2-highlighted {
-        background: $select-hover-bg-color;
-        color: $select-hover-text-color;
+        background: $button-hover-bg-color;
+        color: $text-color;
       }
 
       &.select2-result-with-children {
@@ -216,8 +188,8 @@ select {
   }
 
   &.select2-drop-active {
-    border-radius: $default-border-radius;
-    border: $default-border;
+    @include border-radius($default-border-radius);
+    border: 1px solid $blue;
   }
 }
 
@@ -230,27 +202,10 @@ select {
 
 .select_with_label {
   margin: 0 3*$default-margin;
-  display: inline-block;
-  vertical-align: middle;
+  @include inline-block(top);
 
   label {
-    display: inline-block;
-    vertical-align: middle;
+    @include inline-block;
     margin-right: 2*$default-margin;
-  }
-}
-
-// overriding important of select2 default style for retina screens
-@media only screen and (-webkit-min-device-pixel-ratio: 1.5),
-       only screen and (min-resolution: 2dppx) {
-
-  #alchemy {
-
-    .select2-search input,
-    .select2-search-choice-close,
-    .select2-container .select2-choice abbr,
-    .select2-container .select2-choice .select2-arrow b {
-       background-image: none !important;
-    }
   }
 }

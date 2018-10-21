@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Alchemy
   #
   # == Sending Messages:
@@ -44,15 +42,12 @@ module Alchemy
   # Please have a look at the +alchemy/config/config.yml+ file for further Message settings.
   #
   class MessagesController < Alchemy::BaseController
-    before_action :get_page, except: :create
+    before_filter :get_page, except: :create
 
     helper 'alchemy/pages'
 
     def index #:nodoc:
-      redirect_to show_page_path(
-        urlname: @page.urlname,
-        locale: prefix_locale? ? @page.language_code : nil
-      )
+      redirect_to show_page_path(urlname: @page.urlname, locale: multi_language? ? @page.language_code : nil)
     end
 
     def new #:nodoc:
@@ -61,7 +56,7 @@ module Alchemy
     end
 
     def create #:nodoc:
-      @message = Message.new(message_params)
+      @message = Message.new(params[:message])
       @message.ip = request.remote_ip
       @element = Element.find_by(id: @message.contact_form_id)
       if @element.nil?
@@ -70,7 +65,7 @@ module Alchemy
       @page = @element.page
       @root_page = @page.get_language_root
       if @message.valid?
-        MessagesMailer.contact_form_mail(@message, mail_to, mail_from, subject).deliver
+        Messages.contact_form_mail(@message, mail_to, mail_from, subject).deliver
         redirect_to_success_page
       else
         render template: 'alchemy/pages/show'
@@ -96,7 +91,7 @@ module Alchemy
     end
 
     def redirect_to_success_page
-      flash[:notice] = Alchemy.t(:success, scope: 'contactform.messages')
+      flash[:notice] = _t(:success, scope: 'contactform.messages')
       if @element.ingredient(:success_page)
         urlname = @element.ingredient(:success_page)
       elsif mailer_config['forward_to_page'] && mailer_config['mail_success_page']
@@ -104,10 +99,7 @@ module Alchemy
       else
         urlname = Language.current_root_page.urlname
       end
-      redirect_to show_page_path(
-        urlname: urlname,
-        locale: prefix_locale? ? Language.current.code : nil
-      )
+      redirect_to show_page_path(urlname: urlname, locale: multi_language? ? Language.current.code : nil)
     end
 
     def get_page
@@ -118,8 +110,5 @@ module Alchemy
       @root_page = @page.get_language_root
     end
 
-    def message_params
-      params.require(:message).permit(*mailer_config['fields'])
-    end
   end
 end

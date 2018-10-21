@@ -13,7 +13,7 @@ Alchemy.Hotkeys = (scope) ->
       key.unbind(hotkey)
 
   # Binds keyboard shortcuts to search fields.
-  $search_fields = $('.search_input_field', scope)
+  $search_fields = $('#search_field, #search_input_field', scope)
   $search_fields_clear = $('.search_field_clear, .js_filter_field_clear', scope)
 
   key 'alt+f', ->
@@ -31,7 +31,7 @@ Alchemy.Hotkeys = (scope) ->
     $(document).on 'keypress', (e) ->
       if !$(e.target).is('input, textarea') && String.fromCharCode(e.which) == '?'
         Alchemy.openDialog '/admin/help',
-          title: Alchemy.t('help')
+          title: Alchemy._t('help')
           size: '400x492'
         false
       else

@@ -1,13 +1,13 @@
 <%= toolbar(
   buttons: [
     {
-      icon: :plus,
-      label: Alchemy.t('New Tag'),
+      icon: 'tag_add',
+      label: _t('New Tag'),
       url: alchemy.new_admin_tag_path,
-      title: Alchemy.t('New Tag'),
+      title: _t('New Tag'),
       hotkey: 'alt+n',
       dialog_options: {
-        title: Alchemy.t('New Tag'),
+        title: _t('New Tag'),
         size: '310x180'
       },
       if_permitted_to: [:create, Alchemy::Tag]
@@ -16,16 +16,19 @@
 ) %>
 
 <div id="archive_all" class="resources-table-wrapper">
-  <%= render 'alchemy/admin/resources/table_header' %>
+  <h1 class="resources-header">
+    <%= @tags.total_count %>
+    <%= ActsAsTaggableOn::Tag.model_name.human(count: @tags.total_count) %>
+  </h1>
   <% if @tags.any? %>
 
-  <table class="list">
+  <table class="list" id="tag_list">
     <thead>
       <tr>
         <th class="icon"></th>
-        <th class="name"><%= sort_link(@query, :name, hide_indicator: true) %></th>
-        <th class="count"><%= Gutentag::Tag.human_attribute_name(:taggings_types) %></th>
-        <th class="count"><%= sort_link(@query, :taggings_count, hide_indicator: true) %></th>
+        <th class="name"><%= sortable_column(ActsAsTaggableOn::Tag.human_attribute_name(:name), column: :name) %></th>
+        <th class="count"><%= ActsAsTaggableOn::Tag.human_attribute_name(:taggings_types) %></th>
+        <th class="count"><%= sortable_column(ActsAsTaggableOn::Tag.human_attribute_name(:taggings_count), column: :taggings_count) %></th>
         <th class="tools"></th>
       </tr>
     </thead>
@@ -39,9 +42,9 @@
   <% else %>
 
   <%= render_message do %>
-    <h2><%= Alchemy.t('No Tags found') %></h2>
-    <% if search_filter_params[:q].blank? %>
-      <p><%= Alchemy.t(:tags_get_created_if_used_the_first_time) %></p>
+    <h2><%= _t('No Tags found') %></h2>
+    <% if params[:query].blank? %>
+      <p><%= _t(:tags_get_created_if_used_the_first_time) %></p>
     <% end %>
   <% end %>
 

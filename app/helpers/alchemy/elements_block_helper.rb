@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Alchemy
   # Provides a collection of block-level helpers, allowing for a much more
   # concise way of writing element view/editor partials.
@@ -8,16 +6,21 @@ module Alchemy
     # Base class for our block-level helpers.
     #
     class BlockHelper
-      attr_reader :helpers
-      attr_reader :opts
-
       def initialize(helpers, opts = {})
         @helpers = helpers
         @opts = opts
       end
 
+      def opts
+        @opts
+      end
+
       def element
         opts[:element]
+      end
+
+      def helpers
+        @helpers
       end
     end
 
@@ -105,15 +108,15 @@ module Alchemy
     #
     def element_view_for(element, options = {})
       options = {
-        tag: :div,
-        id: element_dom_id(element),
-        class: element.name,
-        tags_formatter: ->(tags) { tags.join(" ") }
+        :tag   => :div,
+        :id    => element_dom_id(element),
+        :class => element.name,
+        :tags_formatter => lambda { |tags| tags.join(" ") }
       }.merge(options)
 
       # capture inner template block
       output = capture do
-        yield ElementViewHelper.new(self, element: element) if block_given?
+        yield ElementViewHelper.new(self, :element => element) if block_given?
       end
 
       # wrap output in a useful DOM element
@@ -132,7 +135,6 @@ module Alchemy
       # that's it!
       output
     end
-
     # Block-level helper for element editors. Provides a block helper object
     # you can use for concise access to Alchemy's various helpers.
     #
@@ -147,9 +149,13 @@ module Alchemy
     # @param [Alchemy::Element] element
     #   The element to display.
     #
-    def element_editor_for(element)
+    def element_editor_for(element, options = {})
+      options = {
+        # nothing here yet.
+      }.merge(options)
+
       capture do
-        yield ElementEditorHelper.new(self, element: element) if block_given?
+        yield ElementEditorHelper.new(self, :element => element)
       end
     end
   end

@@ -1,22 +1,16 @@
 #alchemy_elements_window {
+  @include box-sizing(border-box);
   position: absolute;
   right: 0;
-  top: $top-menu-height;
-  z-index: 20;
-  width: $elements-window-width;
-  height: calc(100vh - #{$top-menu-height});
+  top: 73px;
+  width: 400px;
+  height: auto;
   border-left: $default-border;
-  background-color: $light-gray;
-  transition: $transition-duration ease-in-out;
-  transform: translate3d($elements-window-width - $default-border-width, 0, 0);
-
-  .elements-window-visible & {
-    transform: translate3d(0, 0, 0);
-  }
+  @include transition(200ms ease-in-out);
 }
 
 #element_area {
-  height: calc(100vh - #{$top-menu-height + $toolbar-height});
+  @include box-sizing(border-box);
   overflow-x: hidden;
   overflow-y: auto;
 
@@ -27,141 +21,136 @@
 
   textarea {
     width: 100%;
-
-    &.has_tinymce {
-      // We need to do this, because globally all texareas have height: auto !important
-      height: 140px !important;
-    }
+    height: 140px;
   }
 }
 
-.element-title {
+.element_heading {
+  padding: 0;
+  z-index: 0;
   overflow: hidden;
   white-space: nowrap;
-  max-width: 85%;
-  margin-left: $default-margin;
-  text-overflow: ellipsis;
-
-  .has-hint & {
-    max-width: 80%;
-  }
+  position: absolute;
+  left: 35px;
+  top: 11px;
+  width: 322px;
 
   .preview_text_quote {
-    font-size: $small-font-size;
+    font-size: 10px;
+    font-style: italic;
     line-height: 15px;
   }
 }
 
-.preview_text_element_name {
-  font-size: $small-font-size;
+span.preview_text_element_name {
+  font-size: 10px;
   text-shadow: #efefef 1px 1px 1px;
   font-weight: bold;
   line-height: 15px;
 }
 
-.element-handle,
-.element-title {
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.element-handle {
-  position: relative;
+.element_handle {
   width: 18px;
   height: 18px;
+  position: absolute;
+  left: 8px;
+  top: 9px;
 
   .element.icon {
     position: absolute;
-    top: 3px;
-    left: 1px;
+    top: 0;
+    left: 0;
+  }
+
+  span.icon {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+
+    &.element_dirty {
+      background-position: -160px -166px;
+    }
   }
 }
 
-.draggable .element-handle {
+.draggable .element_handle {
   cursor: move;
 }
 
-.ajax-folder {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  right: 8px;
-  top: 10px;
+.add_picture {
+  float: left;
+  margin: 1px;
+  width: 119px;
+  border: 1px solid #c0c0c0;
+  @extend %rounded-border;
+  height: 123px;
 
-  .error_icon {
-    float: left;
-    width: 14px;
-    height: 15px;
+  a {
+    display: block;
+    height: 100%;
+    width: 100%;
+    position: relative;
+    text-decoration: none;
+    overflow: hidden;
     text-align: center;
-    background-color: white;
-    border: 1px solid #935b5b;
-    color: #935b5b;
+    font-weight: bold;
+    line-height: 104px;
+    @extend %rounded-border;
+    font-size: 40px;
+    background-color: $light-gray;
+
+    &:hover {
+      background-color: $medium-gray;
+    }
+
+    .icon {
+      font-size: 30px;
+      width: 30px;
+      height: 30px;
+      position: absolute;
+      top: 48px;
+      left: 44px;
+    }
   }
 }
 
-.element-editor {
+.ajax_folder {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
+
+.element_editor {
   border: 1px solid $default-border-color;
-  border-radius: $default-border-radius;
+  @extend %rounded-border;
   background-color: $light-gray;
   margin-bottom: 2*$default-margin;
-  transition: box-shadow $transition-duration;
 
   &.not-draggable {
-    opacity: 0.5;
+    @include opacity(0.5);
   }
 
   &.dirty {
     border-color: #d0c83d;
 
-    > .element-header {
+    .element_head, .element_foot {
       background-color: #fff8df;
     }
   }
 
   &.selected {
-    border-color: #c3c3c3;
-    box-shadow: 0 2px 8px rgba(#9b9b9b, 0.75);
-  }
-
-  &.folded {
-
-    .nested-elements {
-      display: none;
-    }
-  }
-
-  &.dragged {
-    border-style: dotted;
-    overflow: hidden;
-
-    &:not(.compact) {
-      height: 36px !important;
-      transition: height 0.2s;
-    }
-  }
-
-  &.with-contents, &.without-contents.not-nestable {
-
-    .element-content {
-      padding: 2*$default-padding 2*$default-padding 0;
-      border-top: 1px solid $medium-gray;
-    }
+    border-color: $blue;
+    @include box-shadow(0 0 4px $blue);
   }
 
   form {
     margin: 0;
+    padding: 8px 8px 0 8px;
   }
 
   .validation_notice {
-    float: left;
-    margin-top: 8px;
-    margin-bottom: 4px;
-    font-size: $small-font-size;
-    text-align: left;
-  }
-
-  .message {
-    margin: 2*$default-margin 0;
+    font-size: 10px;
+    margin-top: 1em;
   }
 
   .foot_note {
@@ -174,9 +163,9 @@
     line-height: 21px;
     background-color: #f5dea9;
     margin-top: 4px;
-    border-radius: $default-border-radius;
+    @extend %rounded-border;
 
-    .icon.warning {
+    span.icon.warning {
       position: relative;
       top: 2px;
       margin-right: 8px;
@@ -185,88 +174,120 @@
   }
 
   .autocomplete_tag_list {
-    padding: $default-padding 0;
+    background-color: #e5dcca;
+    margin: 0 -8px 1px -8px;
+    padding: 2*$default-padding;
+    padding-left: 38px;
 
     label {
-      font-size: $small-font-size;
+      top: 21px;
+      left: 8px;
+      font-size: 10px;
+      z-index: 1;
     }
 
     .select2-container {
       width: 100%;
 
       .select2-choices {
-        width: 100%;
-        margin-bottom: 0;
-        margin-top: 8px;
+        background-color: #F1EAD9;
+
+        .select2-search-choice {
+          background-color: #e5dcca;
+        }
       }
     }
   }
-
-  hr {
-    height: 0;
-    width: 100%;
-    margin: 0 0 4*$default-margin 0;
-    border: 0 none;
-    border-top: 1px solid $medium-gray;
-    opacity: 1;
-  }
 }
 
-.element-header {
+.element_head, .element_foot {
   position: relative;
-  padding: 2*$default-padding;
-  background-color: $element-header-bg-color;
+}
+
+.element_head {
+  padding: 8px 0 6px;
+  margin-bottom: 0;
+  height: 20px;
+  background-color: $medium-gray;
   @extend .disable-user-select;
-  cursor: pointer;
-  @include border-top-radius($default-border-radius);
 
-  > .hint-with-icon {
-    position: absolute;
-    right: 32px;
-    top: 10px;
-
-    .hint-bubble {
-      left: auto;
-      right: -24px;
-      transform: none;
-
-      &:before {
-        left: auto;
-        right: 24px;
-        transform: none;
-      }
-    }
+  .spinner {
+    top: 9px;
+    right: 9px;
   }
 }
 
-.element-toolbar {
-  padding: $default-padding 0;
-  height: $element-toolbar-height;
-  // background-color: #f0f0f0;
+.element_foot {
+  padding: 2*$default-padding;
+  width: 100%;
+  height: 29px;
+  margin-left: -8px;
+  margin-right: -8px;
+  background-color: $medium-gray;
 
   .element_tools {
     float: left;
-    margin-left: -$default-margin;
+    margin-right: 8px;
+    margin-top: 6px;
   }
-}
 
-.element-footer {
-  border-top: 1px solid $medium-gray;
-  margin: 8px 0 0 0;
-  padding: 2*$default-padding;
-  text-align: right;
+  .element_public {
+    float: left;
+    margin-top: 6px;
+  }
 
   .button {
+    float: right;
     margin: 0;
   }
 }
 
-.element-content-editors {
-  display: flex;
-  flex-wrap: wrap;
+div.element_tools {
+  height: 20px;
 }
 
-.picture_thumbnail .picture_image {
+span.element_tools_icons {
+  float: left;
+}
+
+.element_tools a {
+  width: 16px;
+  height: 16px;
+  float: left;
+  margin: 1px 4px 1px 1px;
+}
+
+a.delete_element_button {
+  background: image-url('alchemy/icons.png') no-repeat -63px -72px;
+}
+
+a.element_copy_button {
+  background: image-url('alchemy/icons.png') no-repeat -128px -72px;
+}
+
+a.element_move_button {
+  background: image-url('alchemy/icons.png') no-repeat -97px -72px;
+}
+
+div.picture_gallery_images {
+  overflow: hidden;
+  margin: $default-margin 0;
+  border: 1px solid $default-border-color;
+  @extend %rounded-border;
+  background-color: $medium-gray;
+  padding: 1px;
+
+  .essence_picture_editor {
+    margin: 1px;
+    float: left;
+    height: 126px;
+
+    .picture_thumbnail { margin: 0 }
+  }
+}
+
+div.picture_thumbnail div.picture_image {
+  height: 93px;
   overflow: hidden;
 
   img.img_paddingtop {
@@ -274,101 +295,102 @@
   }
 }
 
-#cells {
+div#cells {
   min-height: 100px;
 }
 
 .linkable_essence_tools {
-  display: flex;
   position: absolute;
-  bottom: 2 * $default-margin;
+  bottom: 0;
   right: 0;
 
   .icon_button {
-    @include button-defaults(
-      $background-color: $medium-gray,
-      $hover-color: darken($medium-gray, 5%),
-      $border: 1px solid #c0c0c0,
-      $box-shadow: none,
-      $hover-border-color: #c0c0c0,
-      $line-height: 30px,
-      $padding: 0,
-      $margin: 0,
-      $border-radius: 0,
-      $focus-border-color: $focus-color,
-      $focus-box-shadow: 0 0 0 2px $focus-color);
-    width: 29px;
-    height: $form-field-height;
+    margin: 0 0 0 4px;
+    padding: 3px;
+    position: absolute;
+    bottom: 4px;
+    right: 28px;
+    @extend %button-defaults;
+    @include border-radius(0);
 
-    &.disabled, &.disabled:hover {
-      background-color: $form-field-disabled-bg-color;
-    }
-
-    &.linked.link-essence {
-      @include linked-button(
-        $border-radius: 0,
-        $line-height: 30px,
-        $padding: 0
-      );
-      &:focus {
-        border-radius: 0;
-      }
-    }
-
-    &.linked.unlink-essence {
-      @include linked-button(
-        $border-radius: 0 $default-border-radius $default-border-radius 0,
-        $line-height: 30px,
-        $padding: 0
-      );
-      &:focus {
-        border-radius: 0 $default-border-radius $default-border-radius 0;
-      }
-    }
-
-    &.unlink-essence {
-      border-left-width: 0;
+    &.unlink {
+      right: 0;
       @extend .right-rounded-border;
     }
   }
 }
 
+a.expand_element {
+  background: image-url('alchemy/icons.png') no-repeat -160px -72px;
+  height: 16px;
+  width: 16px;
+  text-decoration: none;
+  display: block;
+  margin: 1px;
+}
+
+a.fold_element {
+  background: image-url('alchemy/icons.png') no-repeat -192px -72px;
+  height: 16px;
+  width: 16px;
+  text-decoration: none;
+  display: block;
+  margin: 1px;
+}
+
 .droppable_element_placeholder {
-  height: 36px;
   border: 1px dotted $button-border-color;
   background-color: $medium-gray;
   margin-bottom: 2*$default-margin;
-  border-radius: $default-border-radius;
 }
 
 .edit_images_bottom {
+  height: 19px;
   position: absolute;
-  display: flex;
-  justify-content: space-between;
-  left: 0;
-  bottom: 0;
   z-index: 0;
-  width: 100%;
-  padding: $default-padding $default-padding/2;
+  left: 5px;
+  bottom: 2px;
+  width: 111px;
 
   a {
-    margin: 0 $default-padding/2;
-    padding: $default-padding/2;
-    cursor: pointer;
+    float: left;
+    margin-left: 2px;
+    margin-right: 2px;
+    width: 18px;
+    height: 18px;
 
     &.linked {
-      border-radius: $default-border-radius;
+      position: relative;
+      @extend %rounded-border;
       background-color: $linked-color;
+      border: 1px solid $button-border-color;
+      bottom: 1px;
+      margin-right: 2px;
+      width: 18px;
+      height: 18px;
+      margin-left: 0;
+
+      .icon { margin-left: 1px }
     }
 
     &.disabled {
-      opacity: 0.3;
+      @include opacity(0.3);
       cursor: default;
     }
   }
 }
 
-.essence_picture {
+div.content_editor.essence_date {
+  float: none;
+  @include inline-block;
+  vertical-align: top;
+
+  input.date {
+    width: 154px;
+  }
+}
+
+div.essence_picture_editor {
   position: relative;
 
   .picture_tool_delete {
@@ -384,17 +406,24 @@
   }
 
   .picture_thumbnail {
-    width: 160px;
+    width: 111px;
+    height: 115px;
     margin: $default-margin 0;
-    padding-bottom: 28px;
+
+    .thumbnail_background {
+      width: 111px;
+      height: 93px;
+    }
   }
 
   &.validation_failed .picture_thumbnail {
     border-color: $error_border_color
   }
 
-  .thumbnail_background .icon {
-    font-size: 4em;
+  .thumbnail_background.missing:before {
+    font-family: 'Alchemy Icons';
+    @extend .icon-pictures:before;
+    font-size: 48px;
     color: $medium-gray;
     vertical-align: top;
   }
@@ -407,59 +436,102 @@
     background-color: white;
     background-color: rgba(255, 254, 255, 0.7);
     padding: 4px 8px;
-    font-size: $small-font-size;
+    font-size: 10px;
     text-align: right;
     height: 12px;
     overflow: hidden;
   }
 }
 
+.dragable_picture {
+  float: left;
+
+  .picture_handle {
+    cursor: move;
+  }
+}
+
+.picture_thumbnail .picture_handle {
+  position: absolute;
+  z-index: 1;
+  width: 110px;
+  height: 93px;
+  top: 4px;
+  left: 4px;
+  background-color: transparent;
+  @extend .disable-user-select;
+}
+
+div.file {
+  padding: 0;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  border: 1px solid #c0c0c0;
+  background-color: #f3f3f3;
+  @extend %rounded-border;
+  height: 24px;
+}
+
+div.file_icon {
+  text-align: center;
+  float: left;
+  height: 24px;
+  width: 24px;
+
+  span.icon {
+    margin: $default-margin;
+  }
+
+  a.assign_file {
+    display: block;
+    height: 16px;
+    background: image-url('alchemy/icons.png') no-repeat -480px -40px;
+    width: 16px;
+    margin: $default-margin;
+  }
+}
+
 .content_editor.essence_file {
-
-  .file {
-    margin: 6px 0 $default-margin;
-    border: $default-border;
-    background-color: $white;
-    border-radius: $default-border-radius;
-    height: $form-field-height;
-
-    .validation_failed & {
-      color: $error_text_color;
-      border-color: $error_border_color;
-    }
-  }
-
-  .file_icon {
-    display: inline-block;
-    text-align: center;
-    float: left;
-    width: 24px;
-    padding: 6px 4px;
-  }
 
   .file_name {
     white-space: nowrap;
     overflow: hidden;
     float: left;
     max-width: 80%;
-    line-height: 28px;
-    font-size: $small-font-size;
+    line-height: 25px;
+    font-size: 10px;
     text-overflow: ellipsis;
   }
 }
 
 .essence_file_tools {
-  height: 27px;
+  height: 24px;
   float: right;
   background-color: white;
   width: 48px;
-  border-radius: 0 $default-border-radius $default-border-radius 0;
 
   a {
     text-decoration: none;
-    padding: 6px $default-margin;
+    width: 16px;
+    height: 16px;
+    margin: $default-margin;
     float: left;
+
+    &.assign_file {
+      background: image-url('alchemy/icons.png') -512px -40px;
+    }
+
+    &.edit_file {
+      background: image-url('alchemy/icons.png') -160px -167px;
+    }
   }
+}
+
+a.new_content_link {
+  display: block;
+  text-align: center;
+  margin-bottom: 12px;
+  margin-top: 4px;
 }
 
 div.tinymce_container {
@@ -468,6 +540,7 @@ div.tinymce_container {
 
   .spinner {
     top: 70px;
+    left: 50%;
   }
 }
 
@@ -482,37 +555,31 @@ select.long {
   padding: 0;
 }
 
-.content_editor {
-  width: 100%;
-  padding: $default-padding 0;
+div.content_editor {
+  margin-bottom: 8px;
   position: relative;
 
   .thin_border, input[type="text"] {
     width: 100%;
   }
 
-  &.missing {
+  &.missing p {
+    line-height: 25px;
+    padding: 2*$default-padding;
+    border: 1px solid #f5b04e;
+    background-color: #f5dea9;
+    @extend %rounded-border;
+    font-size: 11px;
 
-    .message {
-      margin: 0;
-      @include clearfix;
-    }
-
-    p {
-      float: left;
-      width: 70%;
-    }
-
-    .button {
-      float: right;
-      margin: 0;
-      text-decoration: none;
+    span.icon.warning {
+      vertical-align: text-bottom;
+      margin-left: 2px;
+      margin-right: 6px;
     }
   }
 
   &.display_inline {
-    display: inline-block;
-    vertical-align: middle;
+    @include inline-block;
     margin-right: 4px;
     vertical-align: top;
 
@@ -531,9 +598,10 @@ select.long {
   }
 
   label {
-    display: inline-block;
+    display: block;
     margin-bottom: 2px;
-    font-size: $small-font-size;
+    font-size: 10px;
+    text-shadow: #fff5e1 1px 1px 0;
     line-height: 15px;
     text-indent: 1px;
 
@@ -543,10 +611,27 @@ select.long {
     }
 
     &.inline {
-      display: inline-block;
-      vertical-align: middle;
+      @include inline-block;
       min-width: 90px;
       margin-right: 4px;
+    }
+
+    a.icon_button.small {
+      width: 10px;
+      height: 10px;
+      display: none;
+
+      .icon {
+        top: 1px;
+        right: 1px;
+      }
+
+      &:hover {
+
+        .icon {
+          right: 2px;
+        }
+      }
     }
   }
 
@@ -563,11 +648,15 @@ select.long {
     }
   }
 
+  &:hover label a.icon_button.small {
+    @include inline-block;
+  }
+
   select.essence_editor_select {
-    border-radius: $default-border-radius;
+    @extend %rounded-border;
     background: white;
     border: 1px solid $button-border-color;
-    font-size: $default-font-size;
+    font-size: 11px;
     height: 21px;
     line-height: 21px;
     padding: 2px;
@@ -590,15 +679,20 @@ select.long {
     }
   }
 
-  &.essence_picture {
-    width: 50%;
-    padding-left: 1px; // Compensate the box shadow
-    padding-right: $default-padding;
+  &.essence_date {
+    float: none;
+    @include inline-block;
+    vertical-align: top;
 
-    + .essence_picture {
-      padding-left: $default-padding;
-      padding-right: 1px; // Compensate the box shadow
+    input.date {
+      width: 154px;
     }
+  }
+
+  &.essence_picture_editor {
+    float: none;
+    height: auto;
+    @include inline-block;
   }
 }
 
@@ -611,14 +705,14 @@ div.pictures_for_element {
   margin-top: 4px;
 }
 
-textarea.has_tinymce {
+textarea.default_tinymce, textarea.custom_tinymce {
   visibility: hidden;
 }
 
 .essence_html_editor textarea {
-  font-family: $mono-font-family;
+  font-family: $mono-font-face;
   resize: vertical;
-  font-size: $form-field-font-size;
+  font-size: 11px;
 }
 
 .text_short_float_left {
@@ -629,13 +723,12 @@ textarea.has_tinymce {
 }
 
 .element_errors {
-  display: none;
   margin-top: 8px;
   margin-bottom: 8px;
   background-color: $error_background_color;
   padding: 2*$default-padding;
   list-style-type: none;
-  border-radius: $default-border-radius;
+  @extend %rounded-border;
   color: $error_text_color;
   border: 1px solid $error_border_color;
 
@@ -645,149 +738,35 @@ textarea.has_tinymce {
   }
 }
 
-.content_editor .hint-with-icon,
-.content_editor .with-hint,
-.element-handle .hint-with-icon {
-  margin: 0;
+a.hint {
+  position: absolute;
+  right: 32px;
+  top: 8px;
+  width: 16px;
+  height: 16px;
+  cursor: help !important;
 
-  > .hint-bubble {
-    left: -7px;
-    transform: none;
+  &:hover span.bubble { display: block }
+  span.bubble { @extend %tooltip }
+}
+
+.content_editor .hint {
+  position: relative;
+  top: auto;
+  right: auto;
+  display: inline-block;
+  margin-right: 4px;
+  margin-top: -2px;
+  margin-left: -1px;
+
+  .bubble {
+    right: auto;
+    left: -4px;
+    top: 24px;
 
     &:before {
-      left: 16px;
+      right: auto;
+      left: 5px;
     }
   }
-}
-
-.element-handle .hint-with-icon {
-  top: -1px;
-}
-
-.nestable-elements {
-  box-shadow: inset 0 4px 8px -2px darken($medium-gray, 15%);
-  background-color: $medium-gray;
-
-  .expanded.element-editor > & {
-    padding: 8px 4px 4px;
-  }
-
-  .add-nestable-element-button {
-    width: calc(50% - 8px);
-    margin: 4px;
-    text-align: center;
-  }
-}
-
-.nested-elements {
-  display: flex;
-  flex-wrap: wrap;
-
-  .element-editor,
-  .droppable_element_placeholder {
-    width: calc(100% - 8px);
-    margin: 4px;
-
-    &.compact {
-      width: calc(50% - 8px);
-    }
-  }
-
-  .element-editor {
-    position: relative;
-
-    &.compact {
-      .element-toolbar {
-        visibility: hidden;
-        position: absolute;
-        height: 35px;
-        padding: 2px 0;
-        opacity: 0;
-        z-index: 1;
-        border-bottom: $default-border;
-        background-color: $light-gray;
-        transition: all $transition-duration;
-      }
-
-      .element-header:hover + .element-toolbar,
-      .element-toolbar:hover {
-        visibility: visible;
-        opacity: 1;
-      }
-
-      .element-footer {
-        margin-top: 0;
-        padding-top: 0;
-        border-top: 0;
-
-        .button {
-          padding: $small-button-padding;
-        }
-      }
-
-      .element-title {
-        max-width: 75%;
-      }
-
-      &:not(.folded) .ajax-folder {
-        pointer-events: none;
-
-        i:before {
-          content: fa-content($fa-var-ellipsis-v);
-        }
-      }
-
-      .element_tools {
-        display: flex;
-        width: 100%;
-        justify-content: space-between;
-        margin-left: 0;
-      }
-
-      .element-content {
-        padding: 4px 8px;
-      }
-
-      .button_with_label {
-        margin: 0 4px;
-      }
-
-      .content_editor,
-      .picture_thumbnail {
-        width: 100%;
-      }
-
-      .picture_thumbnail {
-        margin: 0;
-      }
-
-      .thumbnail_background {
-        height: 115px;
-      }
-
-      textarea,
-      input[type="url"],
-      input[type="text"],
-      input[type="email"],
-      input[type="password"] {
-        padding: 0.5em;
-        height: auto;
-      }
-    }
-  }
-
-  .element-header {
-    background-color: transparent;
-  }
-
-  .element-toolbar {
-    width: 100%;
-    border-top: 1px solid $medium-gray;
-  }
-}
-
-.essence_date--label {
-  position: absolute;
-  right: 7px;
-  top: 37px;
 }

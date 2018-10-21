@@ -1,9 +1,11 @@
+<%- cache(content) do -%>
 <%- if content.ingredient.present? -%>
 <%- html_options = {
   target: content.essence.link_target == "blank" ? "_blank" : nil
 }.merge(local_assigns.fetch(:html_options, {})) -%>
 <%= link_to(content.ingredient, html_options) do -%>
-<%= content.settings_value(:text, local_assigns.fetch(:options, {})) ||
+<%= content_settings_value(content, :text, local_assigns.fetch(:options, {})) ||
   content.ingredient -%>
+<%- end -%>
 <%- end -%>
 <%- end -%>

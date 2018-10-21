@@ -1,16 +1,15 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Admin
     class EssenceFilesController < Alchemy::Admin::BaseController
       authorize_resource class: Alchemy::EssenceFile
 
-      before_action :load_essence_file, only: [:edit, :update]
+      before_filter :load_essence_file, only: [:edit, :update]
 
       helper "Alchemy::Admin::Contents"
 
       def edit
         @content = @essence_file.content
+        @options = options_from_params
       end
 
       def update
@@ -25,16 +24,19 @@ module Alchemy
         @content = Content.find_by(id: params[:content_id])
         @attachment = Attachment.find_by(id: params[:attachment_id])
         @content.essence.attachment = @attachment
+        @options = options_from_params
 
         # We need to update timestamp here because we don't save yet,
         # but the cache needs to be get invalid.
-        @content.touch
+        # And we don't user @content.touch here, because that updates
+        # also the element and page timestamps what we don't want yet.
+        @content.update_column(:updated_at, Time.now)
       end
 
       private
 
       def essence_file_params
-        params.require(:essence_file).permit(:title, :css_class, :link_text)
+        params.require(:essence_file).permit(:title, :css_class)
       end
 
       def load_essence_file

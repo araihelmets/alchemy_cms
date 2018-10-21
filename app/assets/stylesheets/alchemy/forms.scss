@@ -16,28 +16,30 @@ form {
     height: 67px;
   }
 
+  > h2 {
+    @include form-heading;
+  }
+
   .control-label {
     @include form-label;
   }
 
   .input {
     padding: $default-padding 0;
-    @include clearfix;
+    @include pie-clearfix;
 
-    > input[type="url"],
-    > input[type="text"],
-    > input[type="email"],
-    > input[type="password"],
-    > textarea,
-    > .select2-container,
-    > .autocomplete_tag_list,
-    > .mce-tinymce,
-    > .with-hint {
+    input[type="url"],
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    textarea,
+    .select2-container,
+    .autocomplete_tag_list {
       width: $form-right-width;
       float: right;
     }
 
-    > .autocomplete_tag_list {
+    .autocomplete_tag_list {
 
       .select2-container, .select2-choices {
         width: 100%;
@@ -74,7 +76,7 @@ form {
 
       input {
         margin-right: $default-margin;
-        margin-left: 1px;
+        margin-left: $default-margin;
       }
     }
 
@@ -94,7 +96,7 @@ form {
         margin-bottom: 4px;
 
         input[type="text"] {
-          box-shadow: none;
+          @include box-shadow(none);
         }
       }
 
@@ -110,31 +112,16 @@ form {
       text-align: right;
       margin-bottom: 0.25em;
     }
-
-    &.language_locale small.error {
-      @include form-hint(
-      $background-color: $error_background_color,
-      $border-color: $error_border_color
-      );
-      text-align: left;
-    }
-  }
-
-  .input > .with-hint,
-  .checkbox > .with-hint {
-    cursor: default;
-
-    input, textarea {
-      cursor: not-allowed;
-    }
   }
 
   .inline-input {
     @include clearfix;
     margin: 0 -1*$default-margin;
+    @include box-sizing(border-box);
 
     .left-column, .right-column {
       padding: 0 $default-padding;
+      @include box-sizing(border-box);
     }
 
     .left-column {
@@ -160,12 +147,11 @@ form {
 
   .control_group {
     width: $form-right-width;
-    padding-top: 0.6em;
+    padding-top: 6px;
     float: right;
   }
 
-  .input .hint {
-    @include form-hint;
+  .foot_note, .input .hint {
     margin-left: $form-left-width;
   }
 
@@ -173,45 +159,35 @@ form {
     padding: $default-padding 0;
     text-align: right;
   }
-
-  .input-column {
-    float: left;
-    padding: 0 $default-padding;
-    width: 50%;
-  }
-
-  .input-row {
-
-    .input-column {
-
-      &:first-of-type {
-        padding-left: 0;
-      }
-
-      &:last-of-type {
-        padding-right: 0;
-      }
-    }
-  }
 }
 
 textarea#essence_picture_caption {
   height: 61px;
 }
 
+.resource_info {
+
+  h2 {
+    @include form-heading;
+  }
+
+  .value {
+    overflow: hidden;
+
+    label {
+      @include form-label;
+    }
+
+    p {
+      @include form-value-display;
+    }
+  }
+}
+
 // styles for link overlay selects
 .window_form {
-
-  td.checkbox {
-    text-align: left;
-  }
 
   .select2-container {
     width: 100%;
   }
-}
-
-.input-column > label {
-  display: block;
-  margin-top: $default-margin +1;
 }

@@ -1,3 +1,4 @@
+#!/usr/bin/env rake
 begin
   require 'bundler/setup'
 rescue LoadError
@@ -23,7 +24,7 @@ RDoc::Task.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include('app/**/*.rb')
 end
 
-APP_RAKEFILE = File.expand_path('spec/dummy/Rakefile', __dir__)
+APP_RAKEFILE = File.expand_path("../spec/dummy/Rakefile", __FILE__)
 load 'rails/tasks/engine.rake'
 
 require 'rspec/core'
@@ -31,21 +32,17 @@ require 'rspec/core/rake_task'
 
 RSpec::Core::RakeTask.new(:spec)
 
-task default: ['alchemy:spec:prepare', :spec]
+task :default => ['alchemy:spec:prepare', :spec]
 
 Bundler::GemHelper.install_tasks
 
 namespace :alchemy do
   namespace :spec do
+
     desc "Prepares database for testing Alchemy"
     task :prepare do
-      system <<-BASH
-cd spec/dummy
-export RAILS_ENV=test
-bin/rake db:environment:set
-bin/rake db:migrate:reset
-cd -
-BASH
+      system 'cd spec/dummy && RAILS_ENV=test bundle exec rake db:setup && cd -'
     end
+
   end
 end

@@ -6,8 +6,8 @@
     <link rel="shortcut icon" href="<%= asset_path('alchemy/favicon.ico') %>">
     <%= csrf_meta_tag %>
     <meta name="robots" content="noindex">
-    <%= stylesheet_link_tag('alchemy/admin/all', media: 'screen', 'data-turbolinks-track' => true) %>
-    <%= stylesheet_link_tag('alchemy/print', media: 'print', 'data-turbolinks-track' => true) %>
+    <%= stylesheet_link_tag('alchemy/admin', :media => 'screen', "data-turbolinks-track" => true) %>
+    <%= stylesheet_link_tag('alchemy/print', :media => 'print', "data-turbolinks-track" => true) %>
     <%= yield :stylesheets %>
     <script>
       // Global Alchemy JavaScript object.
@@ -34,17 +34,17 @@
       };
     </script>
     <%= render 'alchemy/admin/partials/routes' %>
-    <%= javascript_include_tag('alchemy/admin/all', 'data-turbolinks-track' => true) %>
+    <%= javascript_include_tag('alchemy/alchemy', "data-turbolinks-track" => true) %>
     <%= yield :javascript_includes %>
   </head>
-  <%= content_tag :body, id: 'alchemy', class: alchemy_body_class do %>
+  <body id="alchemy" class="<%= body_class %>">
     <noscript>
-      <h1><%= Alchemy.t(:javascript_disabled_headline) %></h1>
-      <p><%= Alchemy.t(:javascript_disabled_text) %></p>
+      <h1><%= _t(:javascript_disabled_headline) %></h1>
+      <p><%= _t(:javascript_disabled_text) %></p>
     </noscript>
     <div id="overlay">
       <div id="overlay_text_box">
-        <span id="overlay_text"><%= Alchemy.t(:please_wait) %></span>
+        <span id="overlay_text"><%= _t(:please_wait) %></span>
       </div>
     </div>
     <div id="left_menu">
@@ -54,45 +54,42 @@
         <% end %>
         <%= yield(:alchemy_main_navigation) %>
       </div>
-      <div id="logout" class="main_navi_entry">
+      <div id="logout">
         <% if current_alchemy_user %>
           <%= link_to_dialog(
-            "#{render_icon('sign-out-alt', size: 'lg', class: 'module')}<label>#{Alchemy.t(:leave)}</label>".html_safe,
+            "#{render_icon('exit module')}<label>#{_t(:leave)}</label>".html_safe,
             alchemy.leave_admin_path, {
               size: "300x155",
-              title: Alchemy.t("Leave Alchemy")
+              title: _t("Leave Alchemy")
           }, {'data-alchemy-hotkey' => 'alt+q'}) %>
         <% else %>
           <%= link_to(alchemy.root_path) do %>
-            <i class="icon fas fa-sign-out-alt fa-fw fa-lg"></i>
-            <label><%= Alchemy.t(:leave) %></label>
+            <span class="module icon exit"></span>
+            <label><%= _t(:leave) %></label>
           <% end %>
         <% end %>
       </div>
     </div>
     <% if current_alchemy_user %>
     <div id="top_menu">
-      <div id="header">
-        <% if @locked_pages.present? %>
-          <div id="locked_pages">
-            <%= render partial: 'alchemy/admin/pages/locked_page', collection: @locked_pages %>
-          </div>
-        <% end %>
-        <div id="user_info">
-          <%= current_alchemy_user_name %>
-          <% if Alchemy::I18n.available_locales.length > 1 %>
-            <%= select_tag 'change_locale',
-              options_for_select(translations_for_select, ::I18n.locale),
-              class: 'alchemy_selectbox tiny' %>
-          <% end %>
+      <div id="sub_navigation">
+        <%= admin_subnavigation %>
+        <div id="subnav_additions">
+          <%= yield(:subnav_additions) %>
         </div>
       </div>
       <div id="toolbar">
         <%= yield(:toolbar) %>
       </div>
+      <div id="user_info">
+        <%= current_alchemy_user_name %>
+        <%= select_tag 'change_locale',
+          options_for_select(translations_for_select, ::I18n.locale),
+          class: 'alchemy_selectbox tiny' %>
+      </div>
     </div>
     <% end %>
-    <%= render 'alchemy/admin/partials/flash_notices' %>
+    <%= render :partial => 'alchemy/admin/partials/flash_notices' %>
     <div id="main_content">
       <%= yield %>
     </div>
@@ -102,7 +99,6 @@
       // Setting the correct locale for select2 dropdown replacement.
       $.extend($.fn.select2.defaults, $.fn.select2.locales['<%= ::I18n.locale %>']);
     </script>
-    <%= render 'alchemy/admin/uploader/setup' %>
     <%= yield(:javascripts) %>
-  <% end %>
+  </body>
 </html>

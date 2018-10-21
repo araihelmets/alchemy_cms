@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Alchemy
   # This helpers are useful to render elements from pages.
   #
@@ -78,8 +76,7 @@ module Alchemy
     def render_elements(options = {})
       options = {
         from_page: @page,
-        render_format: 'html',
-        reverse: false
+        render_format: 'html'
       }.update(options)
 
       pages = pages_holding_elements(options.delete(:from_page))
@@ -92,11 +89,7 @@ module Alchemy
       elements = collect_elements_from_pages(pages, options)
 
       if options[:sort_by].present?
-        elements = sort_elements_by_content(
-          elements,
-          options.delete(:sort_by),
-          options[:reverse]
-        )
+        elements = sort_elements_by_content(elements, options.delete(:sort_by))
       end
 
       render_element_view_partials(elements, options)
@@ -159,15 +152,14 @@ module Alchemy
         return
       end
 
-      options = {
+      element.store_page(@page) if part.to_sym == :view
+
+      render "alchemy/elements/#{element.name}_#{part}", {
         element: element,
         counter: counter,
-        options: options,
-        locals: options.delete(:locals) || {}
-      }
+        options: options
+      }.merge(options.delete(:locals) || {})
 
-      element.store_page(@page) if part.to_sym == :view
-      render "alchemy/elements/#{element.name}_#{part}", options
     rescue ActionView::MissingTemplate => e
       warning(%(
         Element #{part} partial not found for #{element.name}.\n
@@ -187,18 +179,13 @@ module Alchemy
 
     # Renders the HTML tag attributes required for preview mode.
     def element_preview_code(element)
-      if respond_to?(:tag_options)
-        tag_options(element_preview_code_attributes(element))
-      else
-        # Rails 5.1 uses TagBuilder
-        tag_builder.tag_options(element_preview_code_attributes(element))
-      end
+      tag_options(element_preview_code_attributes(element))
     end
 
     # Returns a hash containing the HTML tag attributes required for preview mode.
     def element_preview_code_attributes(element)
       return {} unless element.present? && @preview_mode && element.page == @page
-      { 'data-alchemy-element' => element.id }
+      { :'data-alchemy-element' => element.id }
     end
 
     # Returns the element's tags information as a string. Parameters and options
@@ -210,12 +197,7 @@ module Alchemy
     #   HTML tag attributes containing the element's tag information.
     #
     def element_tags(element, options = {})
-      if respond_to?(:tag_options)
-        tag_options(element_tags_attributes(element, options))
-      else
-        # Rails 5.1 uses TagBuilder
-        tag_builder.tag_options(element_tags_attributes(element, options))
-      end
+      tag_options(element_tags_attributes(element, options))
     end
 
     # Returns the element's tags information as an attribute hash.
@@ -235,24 +217,21 @@ module Alchemy
       }.merge(options)
 
       return {} if !element.taggable? || element.tag_list.blank?
-      { 'data-element-tags' => options[:formatter].call(element.tag_list) }
+      { :'data-element-tags' => options[:formatter].call(element.tag_list) }
     end
 
     # Sort given elements by content.
     #
     # @param [Array] elements - The elements you want to sort
     # @param [String] content_name - The name of the content you want to sort by
-    # @param [Boolean] reverse - Reverse the sorted elements order
     #
     # @return [Array]
     #
-    def sort_elements_by_content(elements, content_name, reverse = false)
-      sorted_elements = elements.sort_by do |element|
+    def sort_elements_by_content(elements, content_name)
+      elements.sort_by do |element|
         content = element.content_by_name(content_name)
         content ? content.ingredient.to_s : ''
       end
-
-      reverse ? sorted_elements.reverse : sorted_elements
     end
 
     private
@@ -297,7 +276,7 @@ module Alchemy
         page = fallback_options[:from]
       end
       return [] if page.blank?
-      page.elements.not_trashed.named(fallback_options[:with].presence || fallback_options[:for])
+      page.elements.named(fallback_options[:with].blank? ? fallback_options[:for] : fallback_options[:with])
     end
 
     def render_element_view_partials(elements, options = {})
@@ -307,5 +286,6 @@ module Alchemy
       end
       buff.join(options[:separator]).html_safe
     end
+
   end
 end

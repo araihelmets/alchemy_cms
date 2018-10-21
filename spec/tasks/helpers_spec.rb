@@ -1,16 +1,17 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 require 'alchemy/tasks/helpers'
 
 module Alchemy
+
   class Foo
     extend Tasks::Helpers
   end
 
   describe "Tasks:Helpers" do
+
     let(:config) do
-      { 'test' => {
+      {
+        'test' => {
           'adapter'  => 'mysql2',
           'username' => 'testuser',
           'password' => '123456',
@@ -20,16 +21,8 @@ module Alchemy
     end
 
     before do
-      allow(File).to receive(:exist?) { true }
-      allow(File).to receive(:read) do
-        <<-END.strip_heredoc
-          test:
-            adapter: mysql2
-            username: testuser
-            password: "123456"
-            host: localhost
-        END
-      end
+      allow(File).to receive(:exists?).and_return( true)
+      allow(YAML).to receive(:load_file).and_return(config)
     end
 
     describe "#database_dump_command" do
@@ -75,7 +68,7 @@ module Alchemy
 
           context "and the host is anything but not localhost" do
             before do
-              allow(File).to receive(:read).and_return("test:\n  host: mydomain.com")
+              allow(YAML).to receive(:load_file).and_return({'test' => {'host' => 'mydomain.com'}})
             end
             it { is_expected.to include("--host='mydomain.com'") }
           end
@@ -104,7 +97,7 @@ module Alchemy
 
           context "and the host is anything but not localhost" do
             before do
-              allow(File).to receive(:read).and_return("test:\n  host: mydomain.com")
+              allow(YAML).to receive(:load_file).and_return({'test' => {'host' => 'mydomain.com'}})
             end
             it { is_expected.to include("--host='mydomain.com'") }
           end
@@ -159,7 +152,7 @@ module Alchemy
 
           context "and the host is anything but not localhost" do
             before do
-              allow(File).to receive(:read).and_return("test:\n  host: mydomain.com")
+              allow(YAML).to receive(:load_file).and_return({'test' => {'host' => 'mydomain.com'}})
             end
             it { is_expected.to include("--host='mydomain.com'") }
           end
@@ -188,7 +181,7 @@ module Alchemy
 
           context "and the host is anything but not localhost" do
             before do
-              allow(File).to receive(:read).and_return("test:\n  host: mydomain.com")
+              allow(YAML).to receive(:load_file).and_return({'test' => {'host' => 'mydomain.com'}})
             end
             it { is_expected.to include("--host='mydomain.com'") }
           end
@@ -208,12 +201,13 @@ module Alchemy
       end
 
       context 'for missing database config file' do
-        before { allow(File).to receive(:exist?).and_return( false) }
+        before { allow(File).to receive(:exists?).and_return( false) }
 
         it "raises error" do
           expect { Foo.database_config }.to raise_error(RuntimeError)
         end
       end
     end
+
   end
 end

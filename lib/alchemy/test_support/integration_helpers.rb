@@ -1,30 +1,27 @@
 module Alchemy
   module TestSupport
+
     # Helpers for integration specs
     #
-    # This file is included in spec_helper.rb
+    # This file is included in rspec integration/request tests.
     #
     module IntegrationHelpers
-      # Used to stub the current_alchemy_user
+
+      # Used in Capybara features specs. Stubs the current_alchemy_user
       #
-      # Pass either a user object or a symbol in the format of ':as_admin'.
-      # The browser language is set to english ('en')
+      # It mocks an admin user, but you can pass in a user object that would be used as stub.
       #
-      def authorize_user(user_or_role = nil)
-        if user_or_role.is_a?(Alchemy.user_class)
-          user = user_or_role
-        else
-          user = build(:alchemy_dummy_user, user_or_role)
+      def authorize_as_admin(user=nil)
+        # Ensure that phantomjs has always the same browser language.
+        if Capybara.current_driver == :poltergeist
+          page.driver.headers = { 'Accept-Language' => 'en' }
         end
-        set_phantomjs_browser_language("en")
+        if !user
+          user = mock_model('DummyUser', alchemy_roles: %w(admin), language: 'en')
+        end
         allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
       end
-
-      def set_phantomjs_browser_language(lang = nil)
-        if Capybara.current_driver == :poltergeist
-          page.driver.headers = {"Accept-Language" => lang}
-        end
-      end
     end
+
   end
 end

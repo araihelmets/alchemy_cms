@@ -1,11 +1,9 @@
-# frozen_string_literal: true
-
 module Alchemy
   class ElementsController < Alchemy::BaseController
     load_and_authorize_resource
     layout false
 
-    rescue_from CanCan::AccessDenied do
+    rescue_from CanCan::AccessDenied do |exception|
       raise ActiveRecord::RecordNotFound
     end
 

@@ -1,9 +1,9 @@
-<% label_title = Alchemy.t("Create #{resource_name}", default: Alchemy.t('Create')) %>
+<% label_title = _t("Create #{resource_name}", default: _t('Create')) %>
 
 <% toolbar(
   buttons: [
     {
-      icon: :plus,
+      icon: 'create',
       label: label_title,
       url: new_resource_path,
       title: label_title,
@@ -18,6 +18,6 @@
 ) %>
 
 <div id="archive_all" class="resources-table-wrapper">
-  <%= render 'alchemy/admin/resources/table_header' %>
+  <%= resources_header %>
   <%= render 'table' %>
 </div>

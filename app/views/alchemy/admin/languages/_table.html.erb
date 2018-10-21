@@ -3,19 +3,13 @@
   <thead>
     <tr>
       <th>
-        <%= sort_link @query, :name, hide_indicator: true %>
+        <%= sortable_column(Alchemy::Language.human_attribute_name(:name), column: :name) %>
       </th>
       <th>
-        <%= sort_link @query, :language_code, hide_indicator: true %>
+        <%= sortable_column(Alchemy::Language.human_attribute_name(:language_code), column: :language_code) %>
       </th>
       <th>
-        <%= sort_link @query, :country_code, hide_indicator: true %>
-      </th>
-      <th>
-        <%= Alchemy::Language.human_attribute_name(:code) %>
-      </th>
-      <th>
-        <%= Alchemy::Language.human_attribute_name(:locale) %>
+        <%= sortable_column(Alchemy::Language.human_attribute_name(:country_code), column: :country_code) %>
       </th>
       <th>
         <%= Alchemy::Language.human_attribute_name(:frontpage_name) %>
@@ -36,8 +30,8 @@
     <%= render_resources %>
   </tbody>
 </table>
-<%- elsif search_filter_params[:q].present? -%>
-<p><%= Alchemy.t('Nothing found') %></p>
+<%- elsif params[:query] -%>
+<p><%= _t('Nothing found') %></p>
 <%- end -%>
 
 <%= paginate @languages, theme: 'alchemy' %>

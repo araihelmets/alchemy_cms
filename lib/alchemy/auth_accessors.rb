@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # Provides authentication accessors.
 #
 # Alchemy has some defaults for user model name and login logout path names:
@@ -68,20 +66,20 @@ module Alchemy
       if @@user_class_name.is_a?(String)
         @@user_class_name.constantize
       else
-        raise TypeError, 'Alchemy.user_class_name must be a String, not a Class.'
+        raise 'Alchemy.user_class_name must be a String, not a Class.'
       end
     end
   rescue NameError => e
-    if e.message =~ /#{Regexp.escape(@@user_class_name)}/
-      abort <<-MSG.strip_heredoc
+    if e.message.match(/#{Regexp.escape(@@user_class_name)}/)
+      abort <<-MSG
 
-        AlchemyCMS cannot find any user class!
+AlchemyCMS cannot find any user class!
 
-        Please add a user class and tell Alchemy about it or, if you don't want
-        to create your own class, add the `alchemy-devise` gem to your Gemfile.
+Please add a user class and tell Alchemy about it or, if you don't want
+to create your own class, add the `alchemy-devise` gem to your Gemfile.
 
-        gem 'alchemy-devise', '~> 2.1.0'
-      MSG
+gem 'alchemy-devise', '~> 2.1.0'
+MSG
     else
       raise e
     end

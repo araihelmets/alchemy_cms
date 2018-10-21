@@ -1,15 +1,13 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 RSpec.feature "Picture Library" do
   before do
-    authorize_user(:as_admin)
+    authorize_as_admin
   end
 
   describe "Tagging" do
-    let!(:picture_1) { create(:alchemy_picture, tag_list: 'tag1', name: 'TaggedWith1') }
-    let!(:picture_2) { create(:alchemy_picture, tag_list: 'tag2', name: 'TaggedWith2') }
+    let!(:picture_1) { create(:picture, tag_list: 'tag1', name: 'TaggedWith1') }
+    let!(:picture_2) { create(:picture, tag_list: 'tag2', name: 'TaggedWith2') }
 
     scenario "it's possible to filter tags by clicking on its name in the tag list." do
       visit alchemy.admin_pictures_path
@@ -45,7 +43,7 @@ RSpec.feature "Picture Library" do
   end
 
   describe "Filter by tag" do
-    let!(:picture) { create(:alchemy_picture, tag_list: 'bla') }
+    let!(:picture) { create(:picture, tag_list: 'bla') }
 
     scenario "lists all applied tags." do
       visit alchemy.admin_pictures_path

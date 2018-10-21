@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'net/http'
 require 'alchemy/version'
 
@@ -9,8 +7,8 @@ module Alchemy
       authorize_resource class: :alchemy_admin_dashboard
 
       def index
-        @last_edited_pages = Page.all_last_edited_from(current_alchemy_user)
-        @all_locked_pages = Page.locked
+        @last_edited_pages = Page.from_current_site.all_last_edited_from(current_alchemy_user)
+        @locked_pages = Page.from_current_site.all_locked
         if Alchemy.user_class.respond_to?(:logged_in)
           @online_users = Alchemy.user_class.logged_in.to_a - [current_alchemy_user]
         end
@@ -28,12 +26,12 @@ module Alchemy
       def update_check
         @alchemy_version = Alchemy.version
         if @alchemy_version < latest_alchemy_version
-          render plain: 'true'
+          render :text => 'true'
         else
-          render plain: 'false'
+          render :text => 'false'
         end
       rescue UpdateServiceUnavailable => e
-        render plain: e, status: 503
+        render :text => e, :status => 503
       end
 
       private
@@ -44,7 +42,7 @@ module Alchemy
         return '' if versions.blank?
         # reject any non release version
         versions.reject! { |v| v =~ /[a-z]/ }
-        versions.max
+        versions.sort.last
       end
 
       # Get alchemy versions from rubygems or github, if rubygems failes.

@@ -4,8 +4,8 @@ module Alchemy
   module Generators
     class ModuleGenerator < ::Rails::Generators::Base
       desc "This generator generates an Alchemy module for you."
-      argument :module_name, banner: "your_module_name"
-      source_root File.expand_path('templates', __dir__)
+      argument :module_name, :banner => "your_module_name"
+      source_root File.expand_path('templates', File.dirname(__FILE__))
 
       def init
         @module_name = module_name.downcase
@@ -19,9 +19,11 @@ module Alchemy
       end
 
       def copy_templates
-        template "controller.rb.tt", "app/controllers/admin/#{@controller_name}_controller.rb"
-        template "ability.rb.tt", "app/models/#{@module_name}_ability.rb"
-        template "module_config.rb.tt", "config/initializers/alchemy_#{@module_name}.rb"
+        empty_directory Rails.root.join("app/controllers/admin")
+
+        template "controller.rb.tt", Rails.root.join("app/controllers/admin/#{@controller_name}_controller.rb")
+        template "ability.rb.tt", Rails.root.join('app/models', "alchemy_#{@module_name}_ability.rb")
+        template "module_config.rb.tt", Rails.root.join("config/initializers/alchemy_#{@module_name}.rb")
       end
     end
   end

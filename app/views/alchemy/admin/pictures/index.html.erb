@@ -1,68 +1,96 @@
 <% content_for(:toolbar) do %>
   <div class="toolbar_buttons">
+    <%= toolbar_button(
+      icon: 'upload',
+      label: _t(:upload_image),
+      url: alchemy.new_admin_picture_path(size: @size),
+      hotkey: 'alt+n',
+      dialog_options: {
+        title: _t(:upload_image),
+        size: '540x525'
+      },
+      class: 'icon_button',
+      title: _t(:upload_image),
+      if_permitted_to: [:create, Alchemy::Picture]
+    ) %>
     <% if can? :create, Alchemy::Picture %>
-      <%= render 'alchemy/admin/uploader/button',
-        object: Alchemy::Picture.new,
-        file_attribute: 'image_file',
-        redirect_url: alchemy.admin_pictures_path(
-          size: params[:size],
-          filter: 'last_upload'
-        ) %>
-      <div class="toolbar_spacer"></div>
+    <div class="toolbar_spacer"></div>
     <% end %>
     <div class="button_group">
       <div class="button_with_label">
         <%= link_to(
-          render_icon('search-minus'),
-          alchemy.admin_pictures_path(size: "small", q: search_filter_params[:q]),
-          title: Alchemy.t(:small_thumbnails),
-          class: "icon_button"
+          render_icon('zoom-out'),
+          alchemy.admin_pictures_path({
+            size: "small",
+            query: params[:query]
+          }),
+          title: _t(:small_thumbnails),
+          class: "icon_button please_wait"
         ) %>
       </div>
       <div class="button_with_label">
         <%= link_to(
-          render_icon('search'),
-          alchemy.admin_pictures_path(size: "medium", q: search_filter_params[:q]),
-          title: Alchemy.t(:medium_thumbnails),
-          class: "icon_button"
+          render_icon('zoom-equal'),
+          alchemy.admin_pictures_path({
+            size: "medium",
+            query: params[:query]
+          }),
+          title: _t(:medium_thumbnails),
+          class: "icon_button please_wait"
         ) %>
       </div>
       <div class="button_with_label">
         <%= link_to(
-          render_icon('search-plus'),
-          alchemy.admin_pictures_path(size: "large", q: search_filter_params[:q]),
-          title: Alchemy.t(:big_thumbnails),
-          class: "icon_button"
+          render_icon('zoom-in'),
+          alchemy.admin_pictures_path({
+            size: "large",
+            query: params[:query]
+          }),
+          title: _t(:big_thumbnails),
+          class: "icon_button please_wait"
         ) %>
       </div>
-      <label><%= Alchemy.t('Image size') %></label>
+      <label><%= _t('Image size') %></label>
       <%= hidden_field_tag('size', @size, id: 'overlay_thumbnails_size') %>
     </div>
+    <% if can?(:flush, Alchemy::Picture) %>
+      <div class="toolbar_spacer"></div>
+      <%= toolbar_button(
+        icon: 'flush',
+        url: alchemy.flush_admin_pictures_path,
+        dialog: false,
+        link_options: {
+          remote: true,
+          method: :post
+        },
+        label: _t('Flush picture cache'),
+        class: 'icon_button please_wait',
+        title: _t('Flush picture cache'),
+        skip_permission_check: true
+      ) %>
+    <% end %>
     <div class="toolbar_spacer"></div>
     <div class="button_with_label">
       <%= link_to(
-        render_icon('check-square', style: 'regular'),
-        nil,
+        render_icon('select_all'),
+        '',
         id: 'select_all_pictures',
         class: 'icon_button',
         'data-alchemy-hotkey' => 'alt+a'
       ) %>
-      <label><%= Alchemy.t("Select all") %></label>
+      <label><%= _t("Select all") %></label>
     </div>
   </div>
 
-  <%= render 'alchemy/admin/partials/search_form',
-    additional_params: [:filter, :tagged_with, :size] %>
+  <%= render partial: 'alchemy/admin/partials/search_form' %>
 <% end %>
 
-<div id="picture_archive" class="resources-table-wrapper">
-  <div class="resources-header">
-    <h2>
-      <%= @pictures.total_count %>
-      <%= Alchemy::Picture.model_name.human(count: @pictures.total_count) %>
-      <%= Alchemy.t("picture_library.filter.#{search_filter_params[:filter]}") if search_filter_params[:filter].present? %>
-    </h2>
-  </div>
+<div id="picture_archive">
+  <h1>
+    <%= @pictures.total_count %>
+    <%= Alchemy::Picture.model_name.human(count: @pictures.total_count) %>
+    <%= _t("picture_library.filter.#{params[:filter]}") if params[:filter].present? %>
+  </h1>
   <%= render 'archive' %>
 </div>
 
@@ -75,13 +103,7 @@
         e.preventDefault;
         return false;
       });
-      $('.thumbnail_background').click(function(event) {
-        var url = $(this).attr('href');
-        var overlay = new Alchemy.ImageOverlay(url);
-        overlay.open();
-        event.preventDefault();
-        return false;
-      });
+
     });
   </script>
 <% end %>

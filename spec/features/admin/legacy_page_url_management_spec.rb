@@ -1,17 +1,18 @@
-# frozen_string_literal: true
-
+# encoding: utf-8
 require 'spec_helper'
 
 describe 'Legacy page url management', type: :feature, js: true do
   before do
-    authorize_user(:as_admin)
+    authorize_as_admin
   end
 
-  let!(:a_page) { create(:alchemy_page) }
+  let!(:a_page) { create(:page) }
 
   def open_page_properties
     visit admin_pages_path
-    page.find("a[href='#{configure_admin_page_path(a_page)}']").click
+    within "#page_#{a_page.id}" do
+      click_link Alchemy::I18n.t(:edit_page_properties)
+    end
   end
 
   it "lets a user add a page link" do
@@ -51,7 +52,7 @@ describe 'Legacy page url management', type: :feature, js: true do
       click_button 'Yes'
       within '#legacy_page_urls' do
         expect(page).to_not have_content('a-page-link')
-        expect(page).to have_content(Alchemy.t('No page links for this page found'))
+        expect(page).to have_content(Alchemy::I18n.t('No page links for this page found'))
       end
       within '#legacy_urls_label' do
         expect(page).to have_content('(0) Links')

@@ -1,5 +1,6 @@
+<% cache(content) do -%>
 <div class="content_editor essence_richtext" id="<%= content.dom_id %>">
-  <%= content_label(content) %>
+  <%= label_and_remove_link(content) %>
   <div class="tinymce_container">
     <%= text_area_tag(
       content.form_field_name,
@@ -9,3 +10,4 @@
     ) %>
   </div>
 </div>
+<% end -%>

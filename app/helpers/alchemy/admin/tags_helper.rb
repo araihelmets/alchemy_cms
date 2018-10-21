@@ -1,8 +1,7 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Admin
     module TagsHelper
+
       # Renders tags list items for given class name
       #
       # @param class_name [String]
@@ -11,50 +10,93 @@ module Alchemy
       # @return [String]
       #   A HTML string containing <tt><li></tt> tags
       #
-      def render_tag_list(class_name)
-        raise ArgumentError, 'Please provide a String as class_name' if class_name.nil?
-        sorted_tags_from(class_name: class_name).map do |tag|
-          content_tag('li', name: tag.name, class: filtered_by_tag?(tag) ? 'active' : nil) do
+      def render_tag_list(class_name, params)
+        raise ArgumentError.new('Please provide a String as class_name') if class_name.nil?
+        li_s = []
+        class_name.constantize.tag_counts.sort { |x, y| x.name.downcase <=> y.name.downcase }.each do |tag|
+          tags = filtered_by_tag?(tag) ? tag_filter(remove: tag) : tag_filter(add: tag)
+          li_s << content_tag('li', name: tag.name, class: tag_list_tag_active?(tag, params) ? 'active' : nil) do
             link_to(
-              "#{tag.name} (#{tag.taggings_count})",
+              "#{tag.name} (#{tag.count})",
               url_for(
-                search_filter_params.except(:page, :tagged_with).merge(
-                  tagged_with: tags_for_filter(current: tag).presence
+                params.delete_if { |k, v| k == "page" }.merge(
+                  action: 'index',
+                  tagged_with: tags
                 )
               ),
-              remote: request.xhr?
+              remote: request.xhr?,
+              class: 'please_wait'
             )
           end
-        end.join.html_safe
+        end
+        li_s.join.html_safe
       end
 
-      # Returns true if the given tag is in +params[:tagged_with]+
+      # Returns true if the given tag is in +params[:tag_list]+
       #
+      # @param tag [ActsAsTaggableOn::Tag]
+      #   the tag
+      # @param params [Hash]
+      #   url params
+      # @return [Boolean]
+      #
+      def tag_list_tag_active?(tag, params)
+        params[:tagged_with].to_s.split(',').include?(tag.name)
+      end
+
+      # Checks if the tagged_with param contains the given tag
       def filtered_by_tag?(tag)
-        tags_from_params.include?(tag.name)
-      end
-
-      # Returns the tags from params suitable for the tags filter.
-      #
-      # @param current [Gutentag::Tag] - The current tag that will be added or removed if already present
-      # @returns [String]
-      def tags_for_filter(current:)
-        if filtered_by_tag?(current)
-          tags_from_params - Array(current.name)
+        if params[:tagged_with].present?
+          tags = params[:tagged_with].split(',')
+          tags.include?(tag.name)
         else
-          tags_from_params.push(current.name)
-        end.uniq.join(',')
+          false
+        end
       end
 
-      # Returns tags from params
-      # @returns [Array]
-      def tags_from_params
-        search_filter_params[:tagged_with].to_s.split(',')
+      # Adds the given tag to the tag filter.
+      def add_to_tag_filter(tag)
+        if params[:tagged_with].present?
+          tags = params[:tagged_with].split(',')
+          tags << tag.name
+        else
+          [tag.name]
+        end
       end
 
-      def sorted_tags_from(class_name:)
-        class_name.constantize.tag_counts.sort { |x, y| x.name.downcase <=> y.name.downcase }
+      # Removes the given tag from the tag filter.
+      def remove_from_tag_filter(tag)
+        if params[:tagged_with].present?
+          tags = params[:tagged_with].split(',')
+          tags.delete_if { |t| t == tag.name }
+        else
+          []
+        end
       end
+
+      # Returns the tag filter from params.
+      #
+      # A tag can be added to the filter.
+      # A tag can also be removed.
+      #
+      # Options are:
+      #   * options (Hash):
+      #   ** :add (ActsAsTaggableOn::Tag) - The tag that should be added to the tag-filter
+      #   ** :remove (ActsAsTaggableOn::Tag) - The tag that should be removed from the tag-filter
+      #
+      def tag_filter(options={})
+        case
+          when options[:add]
+            taglist = add_to_tag_filter(options[:add]) if options[:add]
+          when options[:remove]
+            taglist = remove_from_tag_filter(options[:remove]) if options[:remove]
+          else
+            return params[:tagged_with]
+        end
+        return nil if taglist.blank?
+        taglist.uniq.join(',')
+      end
+
     end
   end
 end

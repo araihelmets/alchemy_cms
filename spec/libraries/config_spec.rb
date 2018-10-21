@@ -1,9 +1,8 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 module Alchemy
   describe Config do
+
     describe ".get" do
       it "should call #show" do
         expect(Config).to receive(:show).and_return({})
@@ -56,10 +55,17 @@ module Alchemy
 
     describe '.read_file' do
       context 'when given path to yml file exists' do
-        context 'and file is empty' do
+        before { allow(File).to receive(:exists?).and_return(true) }
+
+        it 'should call YAML.load_file with the given config path' do
+          expect(YAML).to receive(:load_file).once.with('path/to/config.yml').and_return({})
+          Config.send(:read_file, 'path/to/config.yml')
+        end
+
+        context 'but its empty' do
           before do
-            # YAML.safe_load returns nil if file is empty.
-            allow(YAML).to receive(:safe_load) { nil }
+            allow(File).to receive(:exists?).with('empty_file.yml').and_return(true)
+            allow(YAML).to receive(:load_file).and_return(false) # YAML.load_file returns false if file is empty.
           end
 
           it "should return an empty Hash" do
@@ -90,7 +96,7 @@ module Alchemy
 
       context 'when all passed configs are empty' do
         it "should raise an error" do
-          expect { Config.send(:merge_configs!, {}) }.to raise_error(LoadError)
+          expect { Config.send(:merge_configs!, {}) }.to raise_error
         end
       end
 
@@ -102,5 +108,7 @@ module Alchemy
         end
       end
     end
+
   end
+
 end

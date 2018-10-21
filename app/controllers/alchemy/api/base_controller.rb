@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Alchemy
   class Api::BaseController < Alchemy::BaseController
     layout false

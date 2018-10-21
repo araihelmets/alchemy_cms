@@ -1,3 +1,85 @@
+#top_menu {
+  @include box-sizing(border-box);
+  position: fixed;
+  top: 0;
+  margin-left: 65px;
+  padding-right: 65px;
+  z-index: 30;
+  width: 100%;
+  @extend .disable-user-select;
+}
+
+#left_menu {
+  white-space: nowrap;
+  z-index: 20;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 65px;
+  overflow: hidden;
+  border-right: $default-border;
+  background: $light-blue;
+  font-size: 10px;
+  @extend .disable-user-select;
+
+  label {
+    display: block;
+  }
+
+  a {
+    text-shadow: #fff 0 0px 4px;
+  }
+}
+
+#main_navi {
+  padding-top: 20px;
+  padding-left: 4px;
+  padding-bottom: 80px;
+
+  .main_navi_entry {
+    color: #444;
+    position: relative;
+    text-align: center;
+    overflow: hidden;
+    display: block;
+    padding-top: 7px;
+    @extend .left-rounded-border;
+    border: 1px none #afafaf;
+    border-right-style: none;
+    padding-bottom: 6px;
+    padding-left: 1px;
+    width: 60px;
+
+    &:hover {
+      cursor: pointer;
+      text-decoration: none;
+      color: $text-color;
+    }
+
+    &.active {
+      background: #baced9;
+      color: $text-color;
+      cursor: default;
+      text-shadow: #fff 0 1px 2px;
+      border: $default-border;
+      padding-left: 0;
+      border-right-style: none;
+      padding-top: 6px;
+      padding-bottom: 5px;
+    }
+
+    img {
+      border-style: none;
+      height: 24px;
+      width: 24px;
+      @include inline-block;
+      margin-bottom: 4px;
+      margin-top: 2px;
+    }
+  }
+}
+
 div#overlay {
   display: none;
   position: fixed;
@@ -8,11 +90,16 @@ div#overlay {
   z-index: 400000;
   background-color: rgba(229, 229, 229, 0.4);
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = #40E5E5E5, endColorstr = #40E5E5E5);
+
+  .spinner {
+    top: 50%;
+    left: 50%;
+  }
 }
 
 div#overlay_text_box {
   color: #333333;
-  font-size: 1.5em;
+  font-size: 18px;
   left: 50%;
   line-height: 120px;
   margin-left: -100px;
@@ -33,23 +120,75 @@ div#overlay_text_box {
   z-index: 1;
   bottom: 0;
   left: 0;
-  width: 100%;
-  margin-bottom: 0;
+  text-align: center;
+  width: 65px;
+  background: $light-blue;
 
-  &:not(:hover) {
-    background-color: $main-menu-bg-color;
+  a {
+    display: block;
+    padding-top: 4px;
+    padding-bottom: 8px;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  img {
+    margin-bottom: 4px;
   }
 }
 
-#header {
-  height: $header-height;
-  line-height: $header-height;
-  background: $header-background;
+#main_content {
+  @include box-sizing(border-box);
+  background-color: $light-gray;
+  padding: 75px 8px 8px 74px;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#archive_all {
+  padding-bottom: 60px;
+
+  &.with_tag_filter {
+    padding-right: 230px;
+  }
+
+  &.resources-table-wrapper {
+    padding-top: 47px;
+  }
+}
+
+div#user_info {
+  position: absolute;
+  top: 0;
+  right: 65px;
+  line-height: 28px;
+  font-size: 11px;
+  padding: 0 8px;
+  background-color: $light-blue;
+
+  .select2-container {
+    margin-top: -2px;
+    margin-right: $default-margin;
+  }
+
+  .current-user-name {
+    padding-right: $default-padding;
+  }
+}
+
+#sub_navigation {
+  height: 24px;
+  line-height: 23px;
+  background: $light-blue;
   border-bottom: $default-border;
+  padding-top: 4px;
   position: relative;
 
   a {
-    display: inline-block;
+    @include inline-block;
 
     &:hover {
       text-decoration: none;
@@ -59,87 +198,97 @@ div#overlay_text_box {
   .page_status_and_name {
     padding: 0 8px;
     background-color: $medium-gray;
-    text-shadow: $text-shadow-light;
+    text-shadow: 0px 1px 1px #FFFFFF;
     @extend .disable-user-select;
-    @extend .locked_page;
     cursor: default;
-    border-bottom-color: $toolbar-bg-color;
+    line-height: 27px;
+    float: left;
+    @extend .top-rounded-border;
+    border: $default-border;
+    border-bottom-style: none;
+    height: 24px;
+    margin-right: 1px;
 
-    .hint-bubble {
-      left: -40px;
-      transform: none;
-
-      &:before {
-        left: 47px;
-      }
+    .page_name {
+      position: relative;
+      bottom: 2px;
     }
   }
 
   .page_name {
     margin-right: $default-margin;
-    line-height: $header-height;
   }
-}
 
-#main_content {
-  padding: 84px 8px 8px $main-menu-width + 10px;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-}
+  .page_language {
+    float: none;
+    position: relative;
+    @include inline-block;
+    bottom: 3px;
+    color: #3265b1;
+    @extend %rounded-border;
+    margin-right: 2px;
+    font-size: 10px;
+    line-height: 12px;
+    text-transform: uppercase;
+  }
 
-#archive_all {
-  height: 100%;
+  .subnavi_tab {
+    float: left;
+    line-height: 21px;
+    height: 23px;
+    text-shadow: #fff 0 0px 4px;
+    background: #d6e0e6;
+    color: #444;
+    @extend .top-rounded-border;
+    border: $default-border;
+    border-bottom-style: none;
+    margin-right: 1px;
 
-  &.with_tag_filter {
+    &.wide {
+      position: relative;
+      padding-right: 24px;
 
-    table {
-      padding-right: 242px;
+      form {
+        position: absolute;
+        right: $default-padding;
+        top: $default-padding;
+        line-height: 1;
+      }
     }
 
-    > .info {
-      margin-right: 242px;
+    &:hover {
+      color: $text-color;
+      text-decoration: none;
+    }
+
+    &.active {
+      position: relative;
+      height: 24px;
+      color: $text-color;
+      background-color: $medium-gray;
+      text-shadow: #fff 0 1px 2px;
+      @extend .disable-user-select;
+      cursor: default;
+      z-index: 10;
+    }
+
+    > a {
+      padding: 0px 8px;
+    }
+
+    .inline.icon {
+      vertical-align: text-bottom;
     }
   }
 }
 
-#user_info {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: $header-height;
-  font-size: $small-font-size;
-  padding-left: 2*$default-padding;
-  border-bottom: $default-border;
-  background-color: $header-background;
-
-  .select2-container, select {
-    height: $form-field-height;
-    margin-top: -3px;
-  }
-
-  .select2-choice, select {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    border-left: $default-border;
-    height: $header-height;
-  }
-
- .select2-choice {
-    line-height: 2;
-  }
-
-  .current-user-name {
-    padding-right: 2*$default-padding;
-  }
-}
-
-#locked_pages {
+#subnav_additions {
+  height: 25px;
+  overflow: hidden;
 
   label {
     float: left;
-    font-size: $small-font-size;
+    font-size: 10px;
     line-height: 27px;
     height: 27px;
     margin-left: 8px;
@@ -148,9 +297,5 @@ div#overlay_text_box {
 
   img {
     float: left;
-  }
-
-  .subnavi_tab > a {
-    padding-right: 0;
   }
 }

@@ -1,45 +1,28 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Admin
     class PagesController < Alchemy::Admin::BaseController
-      include OnPageLayout::CallbacksRunner
-
       helper 'alchemy/pages'
 
       before_action :set_translation,
         except: [:show]
 
       before_action :load_page,
-        only: [:show, :info, :unlock, :visit, :publish, :configure, :edit, :update, :destroy, :fold,
-               :tree]
+        only: [:show, :info, :unlock, :visit, :publish, :configure, :edit, :update, :destroy, :fold]
 
       before_action :set_root_page,
         only: [:index, :show, :sort, :order]
 
-      authorize_resource class: Alchemy::Page, except: [:index, :tree]
-
-      before_action :run_on_page_layout_callbacks,
-        if: :run_on_page_layout_callbacks?,
-        only: [:show]
+      authorize_resource class: Alchemy::Page, except: :index
 
       def index
         authorize! :index, :alchemy_admin_pages
 
-        @languages = Language.on_current_site
+        @locked_pages = Page.from_current_site.all_locked_by(current_alchemy_user)
+        @languages = Language.all
         if !@page_root
           @language = Language.current
-          @languages_with_page_tree = Language.on_current_site.with_root_page
-          @page_layouts = PageLayout.layouts_for_select(@language.id)
+          @languages_with_page_tree = Language.with_root_page
         end
-      end
-
-      # Returns all pages as a tree from the root given by the id parameter
-      #
-      def tree
-        authorize! :tree, :alchemy_admin_pages
-
-        render json: serialized_page_tree
       end
 
       # Used by page preview iframe in Page#edit view.
@@ -48,7 +31,7 @@ module Alchemy
         @preview_mode = true
         Page.current_preview = @page
         # Setting the locale to pages language, so the page content has it's correct translations.
-        ::I18n.locale = @page.language.locale
+        ::I18n.locale = @page.language_code
         render layout: 'application'
       end
 
@@ -66,7 +49,7 @@ module Alchemy
       def create
         @page = paste_from_clipboard || Page.new(page_params)
         if @page.save
-          flash[:notice] = Alchemy.t("Page created", name: @page.name)
+          flash[:notice] = _t("Page created", name: @page.name)
           do_redirect_to(redirect_path_after_create_page)
         else
           @page_layouts = PageLayout.layouts_for_select(Language.current.id, @page.layoutpage?)
@@ -77,16 +60,14 @@ module Alchemy
       end
 
       # Edit the content of the page and all its elements and contents.
-      #
-      # Locks the page to current user to prevent other users from editing it meanwhile.
-      #
       def edit
         # fetching page via before filter
         if page_is_locked?
-          flash[:warning] = Alchemy.t('This page is locked', name: @page.locker_name)
+          flash[:notice] = _t('This page is locked', name: @page.locker_name)
           redirect_to admin_pages_path
-        elsif page_needs_lock?
+        else
           @page.lock_to!(current_alchemy_user)
+          @locked_pages = Page.from_current_site.all_locked_by(current_alchemy_user)
         end
         @layoutpage = @page.layoutpage?
       end
@@ -105,51 +86,47 @@ module Alchemy
         # stores old page_layout value, because unfurtunally rails @page.changes does not work here.
         @old_page_layout = @page.page_layout
         if @page.update_attributes(page_params)
-          @notice = Alchemy.t("Page saved", name: @page.name)
+          @notice = _t("Page saved", :name => @page.name)
           @while_page_edit = request.referer.include?('edit')
-
-          unless @while_page_edit
-            @tree = serialized_page_tree
-          end
         else
           configure
         end
       end
 
-      # Fetches page via before filter, destroys it and redirects to page tree
       def destroy
+        # fetching page via before filter
+        name = @page.name
+        @page_id = @page.id
+        @layoutpage = @page.layoutpage?
         if @page.destroy
-          flash[:notice] = Alchemy.t("Page deleted", name: @page.name)
-
-          # Remove page from clipboard
-          clipboard = get_clipboard('pages')
-          clipboard.delete_if { |item| item['id'] == @page.id.to_s }
-        end
-
-        respond_to do |format|
-          format.js do
-            @redirect_url = if @page.layoutpage?
-                              alchemy.admin_layoutpages_path
-                            else
-                              alchemy.admin_pages_path
-                            end
-
-            render :redirect
+          set_root_page
+          @message = _t("Page deleted", :name => name)
+          flash[:notice] = @message
+          respond_to do |format|
+            format.js
           end
+          # remove from clipboard
+          @clipboard = get_clipboard('pages')
+          @clipboard.delete_if { |item| item['id'] == @page_id.to_s }
         end
       end
 
       def link
+        @url_prefix = ""
         if configuration(:show_real_root)
           @page_root = Page.root
         else
           set_root_page
         end
+        @area_name = params[:area_name]
         @content_id = params[:content_id]
-        @attachments = Attachment.all.collect { |f|
-          [f.name, download_attachment_path(id: f.id, name: f.urlname)]
-        }
-        @url_prefix = prefix_locale? ? "#{Language.current.code}/" : ""
+        @attachments = Attachment.all.collect { |f| [f.name, download_attachment_path(:id => f.id, :name => f.urlname)] }
+        if params[:link_urls_for] == "newsletter"
+          @url_prefix = current_server
+        end
+        if multi_language?
+          @url_prefix = "#{Language.current.code}/"
+        end
       end
 
       def fold
@@ -164,8 +141,8 @@ module Alchemy
       def unlock
         # fetching page via before filter
         @page.unlock!
-        flash[:notice] = Alchemy.t(:unlocked_page, name: @page.name)
-        @pages_locked_by_user = Page.from_current_site.locked_by(current_alchemy_user)
+        flash[:notice] = _t(:unlocked_page, :name => @page.name)
+        @pages_locked_by_user = Page.from_current_site.all_locked_by(current_alchemy_user)
         respond_to do |format|
           format.js
           format.html {
@@ -176,11 +153,7 @@ module Alchemy
 
       def visit
         @page.unlock!
-        redirect_to show_page_url(
-          urlname: @page.urlname,
-          locale: prefix_locale? ? @page.language_code : nil,
-          host: @page.site.host == "*" ? request.host : @page.site.host
-        )
+        redirect_to show_page_path(urlname: @page.urlname, locale: multi_language? ? @page.language_code : nil)
       end
 
       # Sets the page public and updates the published_at attribute that is used as cache_key
@@ -188,13 +161,13 @@ module Alchemy
       def publish
         # fetching page via before filter
         @page.publish!
-        flash[:notice] = Alchemy.t(:page_published, name: @page.name)
-        redirect_back(fallback_location: admin_pages_path)
+        flash[:notice] = _t(:page_published, :name => @page.name)
+        redirect_back_or_to_default(admin_pages_path)
       end
 
       def copy_language_tree
         language_root_to_copy_from.copy_children_to(copy_of_language_root)
-        flash[:notice] = Alchemy.t(:language_pages_copied)
+        flash[:notice] = _t(:language_pages_copied)
         redirect_to admin_pages_path
       end
 
@@ -215,7 +188,7 @@ module Alchemy
           end
         end
 
-        flash[:notice] = Alchemy.t("Pages order saved")
+        flash[:notice] = _t("Pages order saved")
         do_redirect_to admin_pages_path
       end
 
@@ -225,12 +198,12 @@ module Alchemy
       end
 
       def flush
-        Language.current.pages.flushables.update_all(published_at: Time.current)
-        # We need to ensure, that also all layoutpages get the +published_at+ timestamp set,
-        # but not set to public true, because the cache_key for an element is +published_at+
-        # and we don't want the layout pages to be present in +Page.published+ scope.
-        Language.current.pages.flushable_layoutpages.update_all(published_at: Time.current)
-        respond_to { |format| format.js }
+        Language.current.pages.flushables.each do |page|
+          page.publish!
+        end
+        respond_to do |format|
+          format.js
+        end
       end
 
       private
@@ -333,12 +306,7 @@ module Alchemy
       end
 
       def pages_from_raw_request
-        request.raw_post.split('&').map do |i|
-          parts = i.split('=')
-          {
-            parts[0].gsub(/[^0-9]/, '') => parts[1]
-          }
-        end
+        request.raw_post.split('&').map { |i| i = {i.split('=')[0].gsub(/[^0-9]/, '') => i.split('=')[1]} }
       end
 
       def redirect_path_for_switch_language
@@ -350,7 +318,7 @@ module Alchemy
       end
 
       def redirect_path_after_create_page
-        if @page.redirects_to_external? || !@page.editable_by?(current_alchemy_user)
+        if @page.redirects_to_external?
           admin_pages_path
         else
           params[:redirect_to] || edit_admin_page_path(@page)
@@ -370,14 +338,8 @@ module Alchemy
       end
 
       def page_is_locked?
-        return false if !@page.locker.try(:logged_in?)
-        return false if !current_alchemy_user.respond_to?(:id)
-        @page.locked? && @page.locker.id != current_alchemy_user.id
-      end
-
-      def page_needs_lock?
-        return true unless @page.locker
-        @page.locker.try!(:id) != current_alchemy_user.try!(:id)
+        return if !@page.locker.try(:logged_in?)
+        @page.locked? && @page.locker != current_alchemy_user
       end
 
       def paste_from_clipboard
@@ -392,11 +354,6 @@ module Alchemy
         @page_root = Language.current_root_page
       end
 
-      def serialized_page_tree
-        PageTreeSerializer.new(@page, ability: current_ability,
-                                      user: current_alchemy_user,
-                                      full: params[:full] == 'true')
-      end
     end
   end
 end

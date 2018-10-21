@@ -1,5 +1,6 @@
+<% cache(content) do %>
 <div class="content_editor essence_link" id="<%= content.dom_id %>" data-content-id="<%= content.id %>">
-  <%= content_label(content) %>
+  <%= label_and_remove_link(content) %>
   <%= text_field_tag '', content.ingredient,
     class: "thin_border text_with_icon disabled",
     name: nil,
@@ -21,3 +22,4 @@
     $('#<%= content.dom_id %> input.text_with_icon').val($(this).val());
   });
 </script>
+<% end %>

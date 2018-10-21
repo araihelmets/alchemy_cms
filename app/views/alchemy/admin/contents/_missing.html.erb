@@ -1,17 +1,19 @@
 <div class="content_editor missing" data-element-<%= element.id %>-missing-content="<%= name %>">
   <label><%= Alchemy::Content.translated_label_for(name, element.name) %></label>
-  <%= render_message :warning do %>
-    <p><%= Alchemy.t(:content_not_found) %></p>
-    <%= link_to Alchemy.t(:create),
+  <p>
+    <%= render_icon('warning') %>
+    <%= _t(:content_not_found) %>
+    <%= link_to _t(:create),
       alchemy.admin_contents_path(
         content: {
           element_id: element.id,
           name: name
         },
         was_missing: true,
-        options: options
+        options: options.to_json
       ),
       'data-create-missing-content' => true,
-      class: 'small button' %>
-  <% end %>
+      class: 'small button'
+    %>
+  </p>
 </div>

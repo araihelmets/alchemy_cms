@@ -6,8 +6,8 @@
   <% end %>
   <div class="value">
     <label>
-      <% if @page.definition.blank? %>
-        <%= page_layout_missing_warning %>
+      <% if @page.layout_description.blank? %>
+        <span class="inline warning icon" title="<%= _t(:page_layout_description_missing) %>"></span>
       <% end %>
       <%= Alchemy::Page.human_attribute_name(:page_layout) %>
     </label>
@@ -23,33 +23,20 @@
   <% end %>
   </div>
   <div class="value">
-    <label><%= Alchemy.t(:page_status) %></label>
-    <p>
-      <span class="page_status">
-        <%= render_icon(:compass, transform: 'shrink-2', class: @page.public? ? nil : 'disabled') %>
-        <%= @page.status_title(:public) %>
-      </span>
-      <span class="page_status">
-        <%= render_icon(:eye, transform: 'shrink-2', class: @page.visible? ? nil : 'disabled') %>
-        <%= @page.status_title(:visible) %>
-      </span>
-      <span class="page_status">
-        <%= render_icon(:lock, transform: 'shrink-2', class: @page.restricted? ? nil : 'disabled') %>
-        <%= @page.status_title(:restricted) %>
-      </span>
-    </p>
+    <label><%= _t(:page_status) %></label>
+    <p><%= combined_page_status(@page) %></p>
   </div>
   <div class="value">
-    <label><%= Alchemy.t(:page_was_created) %></label>
-    <p><%= Alchemy.t(:from_at) % {by: @page.creator_name, at: l(@page.created_at, format: :'alchemy.page_status')} %></p>
+    <label><%= _t(:page_was_created) %></label>
+    <p><%= _t(:from_at) % {by: @page.creator_name, at: l(@page.created_at, format: :page_status)} %></p>
   </div>
   <div class="value">
-    <label><%= Alchemy.t(:page_was_updated) %></label>
-    <p><%= Alchemy.t(:from_at) % {by: @page.updater_name, at: l(@page.updated_at, format: :'alchemy.page_status')} %></p>
+    <label><%= _t(:page_was_updated) %></label>
+    <p><%= _t(:from_at) % {by: @page.updater_name, at: l(@page.updated_at, format: :page_status)} %></p>
   </div>
   <% if @page.locked? %>
   <div class="value">
-    <label><%= Alchemy.t(:currently_edited_by) %></label>
+    <label><%= _t(:currently_edited_by) %></label>
     <p><%= @page.locker_name %></p>
   </div>
   <% end %>

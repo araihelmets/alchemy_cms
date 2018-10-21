@@ -1,29 +1,21 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Admin
     class AttachmentsController < ResourcesController
-      include UploaderResponses
-      include ArchiveOverlay
-
       helper 'alchemy/admin/tags'
 
       def index
-        @query = Attachment.ransack(search_filter_params[:q])
-        @attachments = @query.result
-
-        if search_filter_params[:tagged_with].present?
-          @attachments = @attachments.tagged_with(search_filter_params[:tagged_with])
+        @attachments = Attachment.all
+        if params[:only].present?
+          @attachments = @attachments.where("file_mime_type LIKE '%#{params[:only]}%'")
         end
-
-        if search_filter_params[:file_type].present?
-          @attachments = @attachments.with_file_type(search_filter_params[:file_type])
+        if params[:except].present?
+          @attachments = @attachments.where("file_mime_type NOT LIKE '%#{params[:except]}%'")
         end
-
-        @attachments = @attachments
-          .page(params[:page] || 1)
-          .per(items_per_page)
-
+        if params[:tagged_with].present?
+          @attachments = @attachments.tagged_with(params[:tagged_with])
+        end
+        @attachments = @attachments.find_paginated(params, 15, sort_order)
+        @options = options_from_params
         if in_overlay?
           archive_overlay
         end
@@ -34,34 +26,50 @@ module Alchemy
         render :show
       end
 
+      def new
+        @attachment = Attachment.new
+        if in_overlay?
+          set_instance_variables
+        end
+      end
+
       def create
-        @attachment = Attachment.create(attachment_attributes)
-        handle_uploader_response(status: :created)
+        @attachment = Attachment.new(attachment_attributes)
+        if @attachment.save
+          if in_overlay?
+            set_instance_variables
+          end
+          message = _t('File uploaded succesfully', name: @attachment.name)
+          render json: {files: [@attachment.to_jq_upload], growl_message: message}, status: :created
+        else
+          message = _t('File upload error', error: @attachment.errors[:file].join)
+          render json: {files: [@attachment.to_jq_upload], growl_message: message}, status: :unprocessable_entity
+        end
       end
 
       def update
-        @attachment.update(attachment_attributes)
-        if attachment_attributes['file'].present?
-          handle_uploader_response(status: :accepted)
-        else
-          render_errors_or_redirect(
-            @attachment,
-            admin_attachments_path(search_filter_params),
-            Alchemy.t("File successfully updated")
-          )
-        end
+        @attachment.update_attributes(attachment_attributes)
+        render_errors_or_redirect(
+          @attachment,
+          admin_attachments_path(page: params[:page], query: params[:query], per_page: params[:per_page]),
+          _t("File successfully updated")
+        )
       end
 
       def destroy
         name = @attachment.name
         @attachment.destroy
-        @url = admin_attachments_url(search_filter_params)
-        flash[:notice] = Alchemy.t('File deleted successfully', name: name)
+        @url = admin_attachments_url(
+          per_page: params[:per_page],
+          page: params[:page],
+          query: params[:query]
+        )
+        flash[:notice] = _t('File deleted successfully', name: name)
       end
 
       def download
         @attachment = Attachment.find(params[:id])
-        send_file @attachment.file.path, {
+        send_data @attachment.file.data, {
           filename: @attachment.file_name,
           type: @attachment.file_mime_type
         }
@@ -69,26 +77,30 @@ module Alchemy
 
       private
 
-      def search_filter_params
-        @_search_filter_params ||= params.except(*COMMON_SEARCH_FILTER_EXCLUDES + [:attachment]).permit(
-          *common_search_filter_includes + [
-            :file_type,
-            :content_id
-          ]
-        )
+      def in_overlay?
+        params[:content_id].present?
       end
 
-      def handle_uploader_response(status:)
-        if @attachment.valid?
-          render successful_uploader_response(file: @attachment, status: status)
-        else
-          render failed_uploader_response(file: @attachment)
+      def archive_overlay
+        @content = Content.find_by(id: params[:content_id])
+        @options = options_from_params
+        respond_to do |format|
+          format.html { render partial: 'archive_overlay' }
+          format.js   { render action:  'archive_overlay' }
         end
       end
 
       def attachment_attributes
         params.require(:attachment).permit(:file, :name, :file_name, :tag_list)
       end
+
+      def set_instance_variables
+        @while_assigning = true
+        @content = Content.find_by(id: params[:content_id])
+        @swap = params[:swap]
+        @options = options_from_params
+      end
+
     end
   end
 end

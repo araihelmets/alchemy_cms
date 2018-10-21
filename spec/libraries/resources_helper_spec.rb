@@ -1,8 +1,5 @@
-# frozen_string_literal: true
-
-require_relative '../../lib/alchemy/i18n'
-require_relative '../../lib/alchemy/resource'
-require_relative '../../lib/alchemy/resources_helper'
+require File.dirname(__FILE__) + "/../../lib/alchemy/resource"
+require File.dirname(__FILE__) + "/../../lib/alchemy/resources_helper"
 
 module Namespace
   class MyResource
@@ -27,6 +24,7 @@ class ResourcesControllerForEngine
     @resource_handler ||= Alchemy::Resource.new('admin/engine_resources', {'engine_name' => 'my_engine'})
   end
 end
+
 
 describe Alchemy::ResourcesHelper do
   let(:controller) { ResourcesController.new }
@@ -56,7 +54,7 @@ describe Alchemy::ResourcesHelper do
 
     describe "#resource_scope" do
       it "returns an array containing a proxy and namespaces for url_for-based helper-methods" do
-        expect(controller.resource_scope).to eq(%w[main_app_proxy admin])
+        expect(controller.resource_scope).to eq(%W[main_app_proxy admin])
       end
     end
 
@@ -68,21 +66,21 @@ describe Alchemy::ResourcesHelper do
       end
 
       it "uses resource_name when no object is given" do
-        expect(controller).to receive(:polymorphic_path).with(["main_app_proxy", "admin", "namespace_my_resource"], {})
+        expect(controller).to receive(:polymorphic_path).with(["main_app_proxy", "admin", "my_resource"], {})
         controller.resource_path
       end
     end
 
     describe "#resources_path" do
       it "invokes polymorphic-path with correct scope and resources_name" do
-        expect(controller).to receive(:polymorphic_path).with(["main_app_proxy", "admin", "namespace_my_resources"], {})
+        expect(controller).to receive(:polymorphic_path).with(["main_app_proxy", "admin", "my_resources"], {})
         controller.resources_path
       end
     end
 
     describe "#new_resource_path" do
       it "invokes new_polymorphic_path with correct scope and resource_name" do
-        expect(controller).to receive(:new_polymorphic_path).with(["main_app_proxy", "admin", "namespace_my_resource"], {})
+        expect(controller).to receive(:new_polymorphic_path).with(["main_app_proxy", "admin", "my_resource"], {})
         controller.new_resource_path
       end
     end
@@ -116,128 +114,24 @@ describe Alchemy::ResourcesHelper do
   end
 
   describe "#render_attribute" do
-    subject { controller.render_attribute(resource_item, attributes, options) }
-
-    let(:options) { {} }
-    let(:attributes) { {name: 'name'} }
-
     it "should return the value from resource attribute" do
       allow(resource_item).to receive(:name).and_return('my-name')
-      is_expected.to eq('my-name')
+      expect(controller.render_attribute(resource_item, {name: 'name'})).to eq('my-name')
     end
 
     context "resource having a relation" do
       let(:associated_object) { double("location", title: 'Title of related object') }
-      let(:relation) do
+      let(:associated_klass) { double("klass", find: associated_object) }
+      let(:relation) {
         {
           attr_method: 'title',
-          name: 'location'
+          model_association: OpenStruct.new(klass: associated_klass)
         }
-      end
-      let(:attributes) do
-        {
-          name: 'name',
-          relation: relation
-        }
-      end
-
-      before do
-        allow(resource_item).to receive(:name).and_return('my-name')
-        expect(resource_item).to receive(:location).and_return(associated_object)
-      end
+      }
 
       it "should return the value from the related object attribute" do
-        is_expected.to eq('Title of related object')
-      end
-
-      context 'if the relation is empty' do
-        let(:associated_object) { nil }
-
-        it { is_expected.to eq("Not found") }
-      end
-    end
-
-    context 'with long values' do
-      before do
-        allow(resource_item).to receive(:name).and_return('*' * 51)
-      end
-
-      it 'truncates the values' do
-        expect(subject.length).to eq(50)
-      end
-
-      context 'but with options[:truncate] set to 10' do
-        let(:options) { {truncate: 10} }
-
-        it 'does not truncate the values' do
-          expect(subject.length).to eq(10)
-        end
-      end
-
-      context 'but with options[:truncate] set to false' do
-        let(:options) { {truncate: false} }
-
-        it 'does not truncate the values' do
-          expect(subject.length).to eq(51)
-        end
-      end
-    end
-
-    context 'format of timestamps' do
-      let(:attributes) do
-        {
-          name: :created_at,
-          type: :datetime
-        }
-      end
-
-      let(:now) { Time.current.to_datetime }
-
-      before do
-        allow(resource_item).to receive(:created_at) { now }
-      end
-
-      it 'formats the time with alchemy default format' do
-        expect(controller).to receive(:l).with(now, format: :'alchemy.default')
-        subject
-      end
-
-      context 'with options[:datetime_format] set to other format' do
-        let(:options) { {datetime_format: 'OTHR'} }
-
-        it 'uses this format' do
-          expect(controller).to receive(:l).with(now, format: 'OTHR')
-          subject
-        end
-      end
-    end
-
-    context 'format of time values' do
-      let(:attributes) do
-        {
-          name: :created_at,
-          type: :time
-        }
-      end
-
-      let(:now) { Time.current }
-
-      before do
-        allow(resource_item).to receive(:created_at) { now }
-      end
-
-      it 'formats the time with alchemy datetime format' do
-        expect(controller).to receive(:l).with(now, format: :'alchemy.time')
-        subject
-      end
-
-      context 'with options[:time_format] set to other format' do
-        let(:options) { {time_format: 'OTHR'} }
-
-        it 'uses this format' do
-          expect(controller).to receive(:l).with(now, format: 'OTHR')
-          subject
-        end
+        allow(resource_item).to receive(:name).and_return('my-name')
+        expect(controller.render_attribute(resource_item, {name: 'name', relation: relation})).to eq('Title of related object')
       end
     end
   end

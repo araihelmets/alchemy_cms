@@ -3,7 +3,6 @@ input[type="url"],
 input[type="text"],
 input[type="email"],
 input[type="password"],
-input[type="search"],
 .thin_border,
 .input_field {
   @extend %default-input-style;
@@ -13,30 +12,53 @@ input[type="search"],
   }
 }
 
-input[type="checkbox"] {
-  transition: $transition-duration;
+textarea {
+  height: auto;
+  padding: 4px 8px !important;
+  line-height: 19px !important;
+}
 
-  &:focus {
-    @include default-focus-style($box-shadow: (
-      inset 0 0 0 1px $focus-color,
-      0 0 0 1px $focus-color
-    ));
+input#search_input_field {
+  width: 204px;
+  text-align: left;
+  @include border-radius(21px);
+  padding: 3px 16px 3px 28px;
+  margin: 0;
+  height: 29px;
+}
+
+div.search_field span.icon, div.js_filter_field_box span.icon {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+}
+
+.js_filter_field_box {
+  position: absolute;
+  right: 4px;
+  top: 8px;
+
+  .js_filter_field {
+    width: 220px;
+    text-align: left;
+    @include border-radius($default-border-radius);
+    padding: 3px 24px 3px 28px;
+    height: 29px;
+    margin: 0;
+  }
+
+  label {
+    font-size: 10px;
+    display: block;
+    text-align: center;
+    padding-top: 3px;
   }
 }
 
-input[type="search"] {
-  -webkit-appearance: textfield;
-}
+.autocomplete_tag_list {
+  position: relative;
 
-input[type="search"]::-webkit-search-decoration,
-input[type="search"]::-webkit-search-cancel-button,
-input[type="search"]::-webkit-search-results-button,
-input[type="search"]::-webkit-search-results-decoration  {
-  -webkit-appearance: none;
-}
-
-textarea {
-  height: auto;
+  label { position: absolute }
 }
 
 .alchemy-char-counter {
@@ -64,13 +86,4 @@ fieldset {
 ::-webkit-input-placeholder {
   line-height: 1.5;
   color: $default-border-color;
-}
-
-.page-publication-date-fields {
-  padding-bottom: $default-padding;
-  @include clearfix;
-
-  &.hidden {
-    display: none;
-  }
 }

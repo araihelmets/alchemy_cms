@@ -1,4 +1,3 @@
-<%- if multi_language? -%>
 <div class="button_with_label">
   <%= form_tag switch_language_admin_pages_path, method: 'get' do %>
     <%= select_tag(
@@ -8,7 +7,5 @@
       data: {'auto-submit' => true}
     ) %>
   <% end %>
-  <label><%= Alchemy.t("Language tree") %></label>
+  <label><%= _t("Language tree") %></label>
 </div>
-<div class="toolbar_spacer"></div>
-<% end %>

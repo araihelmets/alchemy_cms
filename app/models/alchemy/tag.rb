@@ -1,18 +1,16 @@
-# frozen_string_literal: true
-
 # == Schema Information
 #
-# Table name: gutentag_tags
+# Table name: tags
 #
-#  id             :integer          not null, primary key
-#  name           :string
-#  taggings_count :integer          default(0)
+#  id   :integer          not null, primary key
+#  name :string(255)
 #
 
 # Just holds some useful tag methods.
-# The original Tag model is Gutentag::Tag
+# The original Tag model is ActsAsTaggableOn::Tag
 module Alchemy
-  class Tag < Gutentag::Tag
+  class Tag < ActsAsTaggableOn::Tag
+
     # Replaces tag with new tag on all models tagged with tag.
     def self.replace(tag, new_tag)
       tag.taggings.collect(&:taggable).each do |taggable|
@@ -21,5 +19,6 @@ module Alchemy
         taggable.save
       end
     end
+
   end
 end

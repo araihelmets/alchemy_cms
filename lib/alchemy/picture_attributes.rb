@@ -1,12 +1,12 @@
-# frozen_string_literal: true
-
 module Alchemy
   # Provides methods to secure your picture attributes against DOS attacks.
   #
   class PictureAttributes
+
     SECURE_ATTRIBUTES = %w(id size crop crop_from crop_size quality upsample).freeze
 
     class << self
+
       # Secures given attributes
       #
       # @param attributes [Hash]
@@ -23,6 +23,7 @@ module Alchemy
       def joined_attributes(attributes)
         attributes.stringify_keys.values_at(*SECURE_ATTRIBUTES, Rails.configuration.secret_token).join('-')
       end
+
     end
   end
 end

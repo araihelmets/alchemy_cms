@@ -2,5 +2,6 @@
   var dialog = Alchemy.currentDialog();
   dialog.dialog_body.html('<%= j render("archive_overlay") %>');
   Alchemy.SelectBox('#filter_bar');
+  Alchemy.watchForDialogs(dialog.dialog_body);
   Alchemy.ListFilter(dialog.dialog_body);
 })();

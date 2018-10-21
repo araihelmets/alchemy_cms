@@ -15,9 +15,11 @@ Alchemy.Initializer = ->
     Alchemy.Growler.fade()
 
   # Add observer for please wait overlay.
-  $('.please_wait, .button_with_label form :submit')
-    .not('*[data-alchemy-confirm]')
-    .click Alchemy.pleaseWaitOverlay
+  $('a.please_wait, #main_navi a.main_navi_entry, div.button_with_label form :submit, #sub_navigation .subnavi_tab a, .pagination a')
+    .not('*[data-alchemy-confirm], #subnav_additions .subnavi_tab button')
+    .click ->
+      unless Alchemy.isPageDirty()
+        Alchemy.pleaseWaitOverlay()
 
   # Hack for enabling tab focus for <a>'s styled as button.
   $('a.button').attr({tabindex: 0})
@@ -26,16 +28,11 @@ Alchemy.Initializer = ->
   $('select#change_locale').on 'change', (e) ->
     url = window.location.pathname
     delimiter = if url.match(/\?/) then '&' else '?'
-    Turbolinks.visit "#{url}#{delimiter}admin_locale=#{$(this).val()}"
-
-  # Site select handler
-  $('select#change_site').on 'change', (e) ->
-    url = window.location.pathname
-    delimiter = if url.match(/\?/) then '&' else '?'
-    Turbolinks.visit "#{url}#{delimiter}site_id=#{$(this).val()}"
+    window.location.href = "#{url}#{delimiter}locale=#{$(this).val()}"
 
   # Submit forms of selects with `data-autosubmit="true"`
   $('select[data-auto-submit="true"]').on 'change', (e) ->
+    Alchemy.pleaseWaitOverlay()
     $(this.form).submit()
 
   # Attaches the image loader on all images
@@ -46,18 +43,15 @@ Alchemy.Initializer = ->
     tagName = (event.target || event.srcElement).tagName
     key.isPressed('esc') || !(tagName == 'INPUT' || tagName == 'SELECT' || tagName == 'TEXTAREA')
 
-# Enabling the Turbolinks Progress Bar for v2.5
-Turbolinks.enableProgressBar() if Turbolinks.enableProgressBar
+  # Sticky table headers
+  $('table.list').floatThead
+    useAbsolutePositioning: false,
+    scrollingTop: 122,
+    zIndex: 1
 
-# Turbolinks DOM Ready.
-# Handle both v2.5(page:change), and v.5.0 (turbolinks:load)
-$(document).on 'page:change turbolinks:load', ->
+# Enabling the Turbolinks Progress Bar
+Turbolinks.enableProgressBar()
+
+# Turbolinks DOM Ready
+$(document).on 'page:change', ->
   Alchemy.Initializer()
-  return
-
-# Turbolinks before parsing a new page
-# Handle both v2.5(page:receive), and v.5.0 (turbolinks:request-end)
-$(document).on 'page:receive turbolinks:request-end', ->
-  # Ensure that all tinymce editors get removed before parsing a new page
-  Alchemy.Tinymce.removeFrom $('.has_tinymce')
-  return

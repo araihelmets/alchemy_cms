@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 module Alchemy
@@ -15,9 +13,7 @@ module Alchemy
 
       it "raises error if user_class_name is not a String" do
         Alchemy.user_class_name = MyCustomUser
-        expect {
-          Alchemy.user_class
-        }.to raise_error(TypeError)
+        expect {Alchemy.user_class }.to raise_error
       end
 
       after do

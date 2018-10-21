@@ -1,4 +1,5 @@
-<%= render_message :warning do %>
-  <h2><%= Alchemy.t(:element_editor_not_found) %>:</h2>
+<div class="error">
+  <%= render_icon('error') %>
+  <h1><%= _t(:element_editor_not_found) %>:</h1>
   <p><%= error.html_safe %></p>
-<% end %>
+</div>

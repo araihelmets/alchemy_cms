@@ -1,31 +1,37 @@
+<% if @locked_pages.present? %>
+  <% content_for(:subnav_additions) do %>
+    <label><%= _t('Active Pages') %> &raquo;</label>
+    <%= render partial: 'alchemy/admin/pages/locked_page', collection: @locked_pages %>
+  <% end %>
+<% end %>
+
 <% content_for :toolbar do %>
 <div class="toolbar_buttons">
-  <%= render 'alchemy/admin/partials/site_select' %>
-  <%= render 'alchemy/admin/partials/language_tree_select' %>
+  <%= render partial: 'alchemy/admin/partials/language_tree_select' %>
+  <div class="toolbar_spacer"></div>
   <%= toolbar_button(
-    icon: :plus,
+    icon: 'add_page',
     url: alchemy.new_admin_page_path(parent_id: @layout_root.id, layoutpage: true),
     hotkey: 'alt+n',
     dialog_options: {
-      title: Alchemy.t('Add global page'),
+      title: _t('Add global page'),
       size: '340x170',
       overflow: true
     },
-    title: Alchemy.t('Add global page'),
-    label: Alchemy.t('Add global page'),
+    title: _t('Add global page'),
+    label: _t('Add global page'),
     if_permitted_to: [:create, Alchemy::Page]
   ) %>
   <%= toolbar_button(
-    icon: clipboard_empty?('pages') ? 'clipboard' : 'paste',
+    icon: "clipboard#{clipboard_empty?('pages') ? '' : ' full'}",
     url: alchemy.admin_clipboard_path(remarkable_type: 'pages'),
     dialog_options: {
-      title: Alchemy.t('Clipboard'),
+      title: _t('Clipboard'),
       size: '380x270'
     },
-    title: Alchemy.t('Show clipboard'),
-    link_options: {id: "clipboard_button"},
-    label: Alchemy.t('Show clipboard'),
-    if_permitted_to: [:create, Alchemy::Page]
+    title: _t('Show clipboard'),
+    id: "clipboard_button",
+    label: _t('Show clipboard')
   ) %>
 </div>
 <% end %>

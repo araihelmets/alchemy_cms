@@ -1,49 +1,40 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 describe 'Page editing feature' do
-  let(:a_page) { create(:alchemy_page) }
+  let(:a_page) { create(:page) }
 
   context 'as author' do
-    before { authorize_user(:as_author) }
+    before { authorize_as_admin(build(:author_user)) }
 
     it 'cannot publish page.' do
       visit alchemy.edit_admin_page_path(a_page)
       expect(page).to_not have_selector('#publish_page_form')
     end
-
-    describe "the preview frame", :js do
-      it "has relative url" do
-        visit alchemy.edit_admin_page_path(a_page)
-        expect(page).to have_selector("iframe[src='#{admin_page_path(a_page)}']")
-      end
-    end
   end
 
   context 'as editor' do
-    before { authorize_user(:as_editor) }
+    before { authorize_as_admin(build(:editor_user)) }
 
     it 'can publish page.' do
       visit alchemy.edit_admin_page_path(a_page)
       find('#publish_page_form button').click
-      expect(page).to have_content Alchemy.t(:page_published, name: a_page.name)
+      expect(page).to have_content Alchemy::I18n.t(:page_published, name: a_page.name)
     end
 
     context 'while editing a global page' do
-      let(:a_page) { create(:alchemy_page, layoutpage: true) }
+      let(:a_page) { create(:page, layoutpage: true) }
 
-      it 'can publish page.' do
+      it 'cannot publish page.' do
         visit alchemy.edit_admin_page_path(a_page)
-        expect(page).to have_selector('#publish_page_form')
+        expect(page).to_not have_selector('#publish_page_form')
       end
     end
   end
 
   context 'as admin' do
-    let(:a_page) { create(:alchemy_page, :public, visible: true) }
+    let(:a_page) { create(:public_page, visible: true) }
 
-    before { authorize_user(:as_admin) }
+    before { authorize_as_admin }
 
     context "in configure overlay" do
       context "when editing a normal page" do
@@ -57,7 +48,9 @@ describe 'Page editing feature' do
 
         context "with sitemaps show_flag config option set to true" do
           before do
-            stub_alchemy_config(:sitemap, {'show_flag' => true})
+            allow(Alchemy::Config).to receive(:get) do |arg|
+              arg == :sitemap ? {'show_flag' => true} : Alchemy::Config.show[arg.to_s]
+            end
           end
 
           it "should show sitemap checkbox" do
@@ -68,7 +61,9 @@ describe 'Page editing feature' do
 
         context "with sitemaps show_flag config option set to false" do
           before do
-            stub_alchemy_config(:sitemap, {'show_flag' => false})
+            allow(Alchemy::Config).to receive(:get) do |arg|
+              arg == :sitemap ? {'show_flag' => false} : Alchemy::Config.show[arg.to_s]
+            end
           end
 
           it "should not show sitemap checkbox" do
@@ -79,7 +74,7 @@ describe 'Page editing feature' do
       end
 
       context "when editing a global page" do
-        let(:layout_page) { create(:alchemy_page, layoutpage: true) }
+        let(:layout_page) { create(:page, layoutpage: true) }
 
         it "should not show the input fields for normal pages" do
           visit alchemy.edit_admin_layoutpage_path(layout_page)
@@ -119,7 +114,7 @@ describe 'Page editing feature' do
 
     context 'in element panel' do
       let!(:everything_page) do
-        create(:alchemy_page, page_layout: 'everything', do_not_autogenerate: false)
+        create(:page, page_layout: 'everything', do_not_autogenerate: false)
       end
 
       it "renders essence editors for all elements" do
@@ -130,46 +125,10 @@ describe 'Page editing feature' do
         expect(page).to have_selector('div.content_editor.essence_file')
         expect(page).to have_selector('div.content_editor.essence_html_editor')
         expect(page).to have_selector('div.content_editor.essence_link')
-        expect(page).to have_selector('div.content_editor.essence_picture')
+        expect(page).to have_selector('div.content_editor.essence_picture_editor')
         expect(page).to have_selector('div.content_editor.essence_richtext')
         expect(page).to have_selector('div.content_editor.essence_select')
         expect(page).to have_selector('div.content_editor.essence_text')
-      end
-    end
-  end
-
-  describe "configure properties", js: true do
-    before { authorize_user(:as_admin) }
-    let!(:a_page) { create(:alchemy_page) }
-
-    context "when updating the name" do
-      it "saves the name" do
-        visit alchemy.admin_pages_path
-        find(".sitemap_page[name='#{a_page.name}'] .icon.fa-cog").click
-        expect(page).to have_selector(".alchemy-dialog-overlay.open")
-        within(".alchemy-dialog.modal") do
-          find("input#page_name").set("name with some %!x^)'([@!{}]|/?\:# characters")
-          find(".submit button").click
-        end
-        expect(page).to_not have_selector(".alchemy-dialog-overlay.open")
-        expect(page).to have_selector("#sitemap a.sitemap_pagename_link", text: "name with some %!x^)'([@!{}]|/?\:# characters")
-      end
-    end
-  end
-
-  describe "fixed attributes" do
-    before { authorize_user(:as_author) }
-
-    context "when page has fixed attributes" do
-      let!(:readonly_page) do
-        create(:alchemy_page, page_layout: 'readonly')
-      end
-
-      it 'is not possible to edit the attribute', :aggregate_failures do
-        visit alchemy.configure_admin_page_path(readonly_page)
-        readonly_page.fixed_attributes.all.each do |attribute, _v|
-          expect(page).to have_selector("#page_#{attribute}[disabled=\"disabled\"]")
-        end
       end
     end
   end

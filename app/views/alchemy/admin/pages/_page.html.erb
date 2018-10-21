@@ -1,193 +1,112 @@
-<li id="page_{{id}}" class="page_level_{{level}} {{page_layout}}" data-slug="{{slug}}" data-restricted="{{restricted}}" data-visible="{{visible}}" data-external="{{redirects_to_external}}">
-  <div class="sitemap_page{{#if locked}} locked{{/if}}" name="{{name}}">
-    <div class="sitemap_left_images<% if @sorting %>{{#unless root}} handle{{/unless}}<% end %>">
-      <% unless @sorting %>
-        {{#unless root_or_leaf}}
-        <%= link_to(
-          alchemy.fold_admin_page_path(page),
-          remote: true,
-          method: :post,
-          class: "page_folder",
-          title: "{{#if folded}}#{Alchemy.t('Show childpages')}{{else}}#{Alchemy.t('Hide childpages')}{{/if}}",
-          id: "fold_button_{{id}}"
-        ) do %>
-          {{#if folded}}
-            <i class="far fa-plus-square fa-fw"></i>
-          {{else}}
-            <i class="far fa-minus-square fa-fw"></i>
-          {{/if}}
-        <% end %>
-        {{/unless}}
+<li id="page_<%= page.id %>" class="page_level_<%= "#{page.level} #{page.page_layout}" %>" data-slug="<%= page.slug %>" data-restricted="<%= page.restricted? %>" data-visible="<%= page.visible? %>" data-external="<%= page.redirects_to_external? %>">
+  <div class="sitemap_page<%= page.locked ? ' locked' : '' %>" name="<%= page.name %>">
+    <div class="sitemap_left_images">
+      <%= sitemap_folder_link(page) unless page.level == 1 || page.children.blank? || @sorting %>
+      <% if page.layout_description.blank? %>
+        <span class="inline warning icon" title="<%= _t(:page_layout_description_missing) %>"></span>
+      <% else %>
+        <div class="page icon <%= @sorting && page.level > 1 ? 'handle' : nil %>"></div>
       <% end %>
-      {{#if definition_missing}}
-        <%= page_layout_missing_warning %>
-      {{else}}
-        {{#if permissions.edit_content}}
-          {{#if locked}}
-            <span class="with-hint">
-              <i class="icon fas fa-edit fa-fw"></i>
-              <span class="hint-bubble">
-                {{locked_notice}}
-              </span>
-            </span>
-          {{else}}
-            <i class="icon far fa-file fa-lg"></i>
-          {{/if}}
-        {{else}}
-          <span class="with-hint">
-            <i class="icon fas fa-ban fa-fw"></i>
-            <span class="hint-bubble">
-              <%= Alchemy.t('Your user role does not allow you to edit this page') %>
-            </span>
-          </span>
-        {{/if}}
-      {{/if}}
     </div>
     <div class="sitemap_right_tools">
-      <%- unless @sorting -%>
-        {{#if permissions.info}}
-        <div class="button_with_label sitemap_tool">
-          <%= link_to_dialog(
-            render_icon('info-circle'),
-            alchemy.info_admin_page_path(page),
-            {
-              title: Alchemy.t(:page_infos),
-              size: '520x290'
-            }
-          ) %>
-          <label class="center"><%= Alchemy.t(:page_infos) %></label>
-        {{else}}
-        <div class="sitemap_tool disabled with-hint">
-          <%= render_icon('info-circle') %>
-          <span class="hint-bubble">
-            <%= Alchemy.t('Your user role does not allow you to edit this page') %>
-          </span>
-        {{/if}}
-        </div>
-        {{#if permissions.configure}}
-        <div class="button_with_label sitemap_tool">
-          <%= link_to_dialog(
-            render_icon(:cog),
-            alchemy.configure_admin_page_path(page),
-            {
-              title: Alchemy.t(:edit_page_properties),
-              size: page.redirects_to_external? ? '450x330' : '450x680'
-            }
-          ) -%>
-          <label class="center"><%= Alchemy.t(:edit_page_properties) %></label>
-        {{else}}
-        <div class="sitemap_tool disabled with-hint">
-          <%= render_icon(:cog) %>
-          <span class="hint-bubble">
-            <%= Alchemy.t('Your user role does not allow you to edit this page') %>
-          </span>
-        {{/if}}
-        </div>
-        {{#if permissions.copy}}
-        <div class="button_with_label sitemap_tool">
-          <%= link_to(
-            render_icon(:copy),
-            alchemy.insert_admin_clipboard_path(
-              remarkable_type: page.class.name.demodulize.underscore.pluralize,
-              remarkable_id: '__ID__',
-            ).gsub('__ID__', '{{id}}'),
-            remote: true,
-            method: 'post'
-          ) %>
-          <label class="center"><%= Alchemy.t(:copy_page) %></label>
-        {{else}}
-        <div class="sitemap_tool disabled with-hint">
-          <%= render_icon(:copy) %>
-          <span class="hint-bubble">
-            <%= Alchemy.t('Your user role does not allow you to edit this page') %>
-          </span>
-        {{/if}}
-        </div>
-        {{#if permissions.destroy}}
-        <div class="button_with_label sitemap_tool">
-          <%= link_to_confirm_dialog(
-            render_icon(:minus),
-            Alchemy.t(:confirm_to_delete_page),
-            url_for(
-              controller: 'pages',
-              action: 'destroy',
-              id: '__ID__'
-            ).gsub('__ID__', '{{id}}')
-          ) -%>
-          <label class="center"><%= Alchemy.t(:delete_page) %></label>
-        {{else}}
-        <div class="sitemap_tool disabled with-hint">
-          <%= render_icon(:minus) %>
-          <span class="hint-bubble">
-            <%= Alchemy.t('Your user role does not allow you to edit this page') %>
-          </span>
-        {{/if}}
-        </div>
-        {{#if permissions.create}}
-        <div class="button_with_label sitemap_tool">
-          <%= link_to_dialog(
-            render_icon(:plus),
-            alchemy.new_admin_page_path(parent_id: '__ID__').gsub('__ID__', '{{id}}'),
-            {
-              title: Alchemy.t(:create_page),
-              size: '340x165',
-              overflow: true
-            }
-          ) -%>
-          <label class="left"><%= Alchemy.t(:create_page) %></label>
-        {{else}}
-        <div class="sitemap_tool disabled with-hint">
-          <%= render_icon(:plus) %>
-          <span class="hint-bubble">
-            <%= Alchemy.t('Your user role does not allow you to edit this page') %>
-          </span>
-        {{/if}}
-        </div>
+    <%- unless @sorting -%>
+      <%- if can?(:info, page) -%>
+        <%= link_to_dialog(
+          render_icon('info'),
+          alchemy.info_admin_page_path(page),
+          {
+            title: _t(:page_infos),
+            size: '520x290'
+          },
+          {
+            title: _t(:page_infos),
+            class: 'sitemap_tool'
+          }
+        ) %>
       <%- end -%>
+      <%- if can?(:configure, page) -%>
+        <%= link_to_dialog(
+          render_icon('configure_page'),
+          alchemy.configure_admin_page_path(page),
+          {
+            title: _t(:edit_page_properties),
+            size: page.redirects_to_external? ? '450x330' : '450x720'
+          },
+          title: _t(:edit_page_properties),
+          class: 'sitemap_tool'
+        ) -%>
+      <%- end -%>
+      <span class="sitemap_sitetools">
+      <%- if can?(:copy, page) -%>
+        <%= link_to(
+          render_icon("copy_page"),
+          alchemy.insert_admin_clipboard_path(
+            remarkable_type: page.class.name.demodulize.underscore.pluralize,
+            remarkable_id: page.id
+          ),
+          remote: true,
+          method: 'post',
+          title: _t(:copy_page),
+          class: 'sitemap_tool'
+        ) %>
+      <%- end -%>
+      <%- if can?(:destroy, page) -%>
+        <%= link_to_confirm_dialog(
+          render_icon('delete_page'),
+          _t(:confirm_to_delete_page),
+          url_for(
+            controller: 'pages',
+            action: 'destroy',
+            id: page.id
+          ),
+          {
+            title: _t(:delete_page),
+            class: 'sitemap_tool'
+          }
+        ) -%>
+      <%- end -%>
+      <%- if can?(:create, Alchemy::Page) -%>
+        <%= link_to_dialog(
+          render_icon('add_page'),
+          alchemy.new_admin_page_path(parent_id: page.id),
+          {
+            title: _t(:create_page),
+            size: '340x165',
+            overflow: true
+          },
+          title: _t(:create_page),
+          class: 'sitemap_tool'
+        ) -%>
+      <%- end -%>
+      </span>
+    <%- end -%>
     </div>
     <div class="page_infos" id="page_<%= page.id %>_infos">
-      <span class="page_status with-hint">
-        <i class="icon fas fa-fw fa-compass {{#unless public}}disabled{{/unless}}" data-fa-transform="shrink-2"></i>
-        <span class="hint-bubble">{{status_titles.public}}</span>
-      </span>
-      <span class="page_status with-hint">
-        <i class="icon fas fa-fw fa-eye {{#unless visible}}disabled{{/unless}}" data-fa-transform="shrink-2"></i>
-        <span class="hint-bubble">{{status_titles.visible}}</span>
-      </span>
-      <span class="page_status with-hint">
-        <i class="icon fas fa-fw fa-lock {{#unless restricted}}disabled{{/unless}}" data-fa-transform="shrink-2"></i>
-        <span class="hint-bubble">{{status_titles.restricted}}</span>
-      </span>
+      <span class="page_status <%= page.public ? 'public' : 'not_public' %>" title="<%= page.status_title(:public) %>"></span>
+      <span class="page_status <%= page.visible ? 'visible' : 'not_visible' %>" title="<%= page.status_title(:visible) %>"></span>
+      <span class="page_status <%= page.restricted ? 'restricted' : 'not_restricted' %>" title="<%= page.status_title(:restricted) %>"></span>
     </div>
-    {{#if redirects_to_external}}
-      <div class="redirect_url" title="{{urlname}}">
-        &raquo; <%= Alchemy.t('Redirects to') %>:
-        {{ external_urlname }}
-      </div>
-    {{/if}}
     <div class="sitemap_sitename">
-      {{#if redirects_to_external}}
-        <span class="sitemap_pagename_link inactive">{{ name }}</span>
-      {{else}}
-        {{#if permissions.edit_content}}
-          <%= link_to_unless(
-            @sorting,
-            '{{name}}',
-            alchemy.edit_admin_page_path(page),
-            title: Alchemy.t(:edit_page),
-            class: "sitemap_pagename_link"
-          ) { content_tag('span', '{{name}}', class: "sitemap_pagename_link") } -%>
-        {{else}}
-          <%= content_tag('span', '{{name}}', class: "sitemap_pagename_link") %>
-        {{/if}}
-      {{/if}}
+    <%- if page.redirects_to_external? -%>
+      <span class="sitemap_pagename_link inactive"><%= page.name %></span>
+      <span class="redirect_url" title="<%= h page.urlname %>">
+        &raquo; <%= _t('Redirects to') %>:
+        <%= h page.external_urlname %>
+      </span>
+    <%- else -%>
+      <%= link_to_unless(
+        @sorting,
+        page.name,
+        alchemy.edit_admin_page_path(page),
+        title: _t(:edit_page),
+        class: "sitemap_pagename_link"
+      ) { content_tag('span', page.name, class: "sitemap_pagename_link") } -%>
+    <%- end -%>
     </div>
   </div>
-  {{#if children}}
-  <% unless @sorting %>{{#unless folded}}<% end %>
-  <ul id="page_{{id}}_children" class="level_{{level}}_children">
-    {{> list}}
+  <%- if @sorting || (!page.folded?(current_alchemy_user) && !page.children.empty?) -%>
+  <ul id="page_<%= page.id %>_children" class="level_<%= page.level %>_children">
+    <%= render partial: 'page', collection: page.children %>
   </ul>
-  <% unless @sorting %>{{/unless}}<% end %>
-  {{/if}}
+  <%- end -%>
 </li>

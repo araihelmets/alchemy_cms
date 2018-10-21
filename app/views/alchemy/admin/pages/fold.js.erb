@@ -1,2 +1,3 @@
-$('#fold_button_<%= @page.id %>').css('background', 'none');
-Alchemy.Sitemap.fetch(<%= @page.id %>);
+$('#page_<%= @page.id -%>').replaceWith('<%= j render("page", page: @page) %>');
+Alchemy.watchForDialogs('#page_<%= @page.id %>');
+Alchemy.Spinner.watch('#page_<%= @page.id %>');

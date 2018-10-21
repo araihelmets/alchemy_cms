@@ -1,68 +1,90 @@
-<% content_for :javascript_includes do %>
-  <meta name="turbolinks-cache-control" content="no-cache">
+<% if @locked_pages.present? %>
+  <% content_for(:subnav_additions) do %>
+    <label><%= _t('Active Pages') %> &raquo;</label>
+    <%= render partial: 'locked_page', collection: @locked_pages %>
+  <% end %>
 <% end %>
 
 <% content_for :toolbar do %>
 <div class="toolbar_buttons">
-  <%= render 'alchemy/admin/partials/site_select' %>
-  <%= render 'alchemy/admin/partials/language_tree_select' %>
+  <%= render :partial => 'alchemy/admin/partials/language_tree_select' %>
+  <div class="toolbar_spacer"></div>
   <% if can?(:flush, Alchemy::Page) %>
   <div class="button_with_label">
     <%= link_to(
-      render_icon(:eraser),
+      render_icon('flush'),
       alchemy.flush_admin_pages_path,
       :remote => true,
       :method => :post,
       :class => 'icon_button please_wait',
-      :title => Alchemy.t('Flush page cache')
+      :title => _t('Flush page cache')
     ) %>
-    <label><%= Alchemy.t('Flush page cache') %></label>
+    <label><%= _t('Flush page cache') %></label>
   </div>
   <% end %>
   <% if can?(:sort, Alchemy::Page) %>
-  <div class="button_with_label">
+  <div class="button_with_label" id="page_sorting_button">
     <%= link_to(
-      render_icon(:random),
+      render_icon('sort'),
       alchemy.sort_admin_pages_path,
-      method: :get,
-      class: 'icon_button',
-      title: Alchemy.t('Sort pages')
+      :complete => '',
+      :method => :get,
+      :remote => true,
+      :class => 'icon_button please_wait',
+      :title => _t('Sort pages')
     ) %>
-    <label><%= Alchemy.t('Sort pages') %></label>
+    <label><%= _t('Sort pages') %></label>
   </div>
   <% end %>
   <div class="button_with_label" id="clipboard_button">
     <%= link_to_dialog(
-      render_icon(clipboard_empty?('pages') ? :clipboard : :paste),
+      render_icon("clipboard#{clipboard_empty?('pages') ? '' : ' full'}"),
       alchemy.admin_clipboard_path(:remarkable_type => 'pages'),
       {
-        :title => Alchemy.t('Clipboard'),
+        :title => _t('Clipboard'),
         :size => '380x305'
       },
       :class => 'icon_button',
-      :title => Alchemy.t('Show clipboard')
+      :title => _t('Show clipboard')
     ) %>
-    <label><%= Alchemy.t('Show clipboard') %></label>
+    <label><%= _t('Show clipboard') %></label>
   </div>
 </div>
 <div class="js_filter_field_box">
   <%= text_field_tag 'filter', '',
-    class: 'thin_border js_filter_field search_input_field',
-    placeholder: Alchemy.t(:search),
-    id: nil %>
+    class: 'thin_border js_filter_field',
+    id: 'search_field',
+    placeholder: _t(:search) %>
   <%= render_icon :search %>
-  <%= link_to(render_icon(:times, size: 'xs'), '#', {
+  <%= link_to('', '#', {
     class: "js_filter_field_clear",
-    title: Alchemy.t(:click_to_show_all)
+    title: _t(:click_to_show_all)
   }) %>
 </div>
 <% end %>
 
 <div id="archive_all">
 <% if @page_root %>
-  <h2 id="page_filter_result"></h2>
 
-  <%= render 'sitemap', page_partial: 'page', full: !!@sorting %>
+  <div id="sort_panel" style="display: none">
+    <div class="info">
+      <%= render_icon('info') %>
+      <%= _t(:explain_sitemap_dragndrop_sorting) %>
+    </div>
+    <div class="buttons">
+      <%= link_to( _t(:cancel), alchemy.admin_pages_path, :class => 'button' ) %>&nbsp;
+      <%= submit_tag( _t('save order'), :id => 'save_page_order', :class => 'button' ) %>
+    </div>
+  </div>
+
+  <h1 id="page_filter_result"></h1>
+
+  <h2 id="sitemap_heading">
+    <span class="page_name"><%= _t('Name') %></span>
+    <span class="page_infos"><%= _t('Status') %></span>
+  </h2>
+
+  <%= render :partial => 'sitemap' %>
 
 <% elsif can?(:create, Alchemy::Page) %>
 

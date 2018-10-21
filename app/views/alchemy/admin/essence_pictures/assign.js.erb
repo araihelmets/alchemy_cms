@@ -3,8 +3,16 @@ $('#<%= @content.dom_id -%>').replaceWith('<%= j(
   render(
     "alchemy/essences/essence_picture_editor",
     content: @content,
-    options: options_from_params
+    options: @options
   )
 ) %>');
+
+<% if @content.siblings.essence_pictures.count > 1 %>
+
+Alchemy.SortableContents('#<%= @content.element.id -%>_contents', '<%= form_authenticity_token %>');
+
+<% end %>
+
 Alchemy.closeCurrentDialog();
 Alchemy.setElementDirty('#element_<%= @content.element.id %>');
+Alchemy.watchForDialogs('#<%= @content.dom_id %>');

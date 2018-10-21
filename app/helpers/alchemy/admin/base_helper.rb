@@ -1,7 +1,6 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Admin
+
     # This module contains helper methods for rendering dialogs, toolbar buttons and confirmation windows.
     #
     # The most important helpers for module developers are:
@@ -23,7 +22,7 @@ module Alchemy
       def current_alchemy_user_name
         name = current_alchemy_user.try(:alchemy_display_name)
         if name.present?
-          content_tag :span, "#{Alchemy.t('Logged in as')} #{name}", class: 'current-user-name'
+          content_tag :span, "#{_t('Logged in as')} #{name}", class: 'current-user-name'
         end
       end
 
@@ -51,7 +50,7 @@ module Alchemy
       # @option options [Boolean] :modal (true)
       #    Show as modal window.
       #
-      def link_to_dialog(content, url, options = {}, html_options = {})
+      def link_to_dialog(content, url, options={}, html_options={})
         default_options = {modal: true}
         options = default_options.merge(options)
         link_to content, url,
@@ -60,15 +59,8 @@ module Alchemy
 
       # Used for translations selector in Alchemy cockpit user settings.
       def translations_for_select
-        Alchemy::I18n.available_locales.sort.map do |locale|
-          [Alchemy.t(locale, scope: :translations), locale]
-        end
-      end
-
-      # Used for site selector in Alchemy cockpit.
-      def sites_for_select
-        Alchemy::Site.all.map do |site|
-          [site.name, site.id]
+        Alchemy::I18n.available_locales.map do |locale|
+          [_t(locale, :scope => :translations), locale]
         end
       end
 
@@ -105,8 +97,8 @@ module Alchemy
         content_tag(:div, class: 'js_filter_field_box') do
           concat text_field_tag(nil, nil, options)
           concat render_icon(:search)
-          concat link_to(render_icon(:times, size: 'xs'), '', class: 'js_filter_field_clear', title: Alchemy.t(:click_to_show_all))
-          concat content_tag(:label, Alchemy.t(:search), for: options[:id])
+          concat link_to('', '', class: 'js_filter_field_clear', title: _t(:click_to_show_all))
+          concat content_tag(:label, _t(:search), for: options[:id])
         end
       end
 
@@ -125,23 +117,23 @@ module Alchemy
       # @param [Hash] html_options
       #   HTML options get passed to the link
       #
-      # @option html_options [String] :title (Alchemy.t(:please_confirm))
+      # @option html_options [String] :title (_t(:please_confirm))
       #   The dialog title
       # @option html_options [String] :message (message)
       #   The message displayed in the dialog
-      # @option html_options [String] :ok_label (Alchemy.t("Yes"))
+      # @option html_options [String] :ok_label (_t("Yes"))
       #   The label for the ok button
-      # @option html_options [String] :cancel_label (Alchemy.t("No"))
+      # @option html_options [String] :cancel_label (_t("No"))
       #   The label for the cancel button
       #
       def link_to_confirm_dialog(link_string = "", message = "", url = "", html_options = {})
         link_to(link_string, url,
           html_options.merge(
             'data-alchemy-confirm-delete' => {
-              title: Alchemy.t(:please_confirm),
+              title: _t(:please_confirm),
               message: message,
-              ok_label: Alchemy.t("Yes"),
-              cancel_label: Alchemy.t("No")
+              ok_label: _t("Yes"),
+              cancel_label: _t("No")
             }.to_json
           )
         )
@@ -168,10 +160,10 @@ module Alchemy
       #
       def button_with_confirm(value = "", url = "", options = {}, html_options = {})
         options = {
-          message: Alchemy.t(:confirm_to_proceed),
-          ok_label: Alchemy.t("Yes"),
-          title: Alchemy.t(:please_confirm),
-          cancel_label: Alchemy.t("No")
+          message: _t(:confirm_to_proceed),
+          ok_label: _t("Yes"),
+          title: _t(:please_confirm),
+          cancel_label: _t("No")
         }.merge(options)
         form_tag url, {method: html_options.delete(:method), class: 'button-with-confirm'} do
           button_tag value, html_options.merge('data-alchemy-confirm' => options.to_json)
@@ -189,9 +181,9 @@ module Alchemy
       #
       def delete_button(url, options = {}, html_options = {})
         options = {
-          title: Alchemy.t('Delete'),
-          message: Alchemy.t('Are you sure?'),
-          icon: :minus
+          title: _t('Delete'),
+          message: _t('Are you sure?'),
+          icon: 'destroy'
         }.merge(options)
         button_with_confirm(
           render_icon(options[:icon]),
@@ -200,7 +192,7 @@ module Alchemy
           }, {
             method: 'delete',
             title: options[:title],
-            class: "icon_button #{html_options.delete(:class)}".strip
+            class: "icon_only #{html_options.delete(:class)}".strip
           }.merge(html_options)
         )
       end
@@ -210,9 +202,16 @@ module Alchemy
         if content_for?(:title)
           title = content_for(:title)
         else
-          title = Alchemy.t(controller_name, scope: :modules)
+          title = _t(controller_name, :scope => :modules)
         end
         "Alchemy CMS - #{title}"
+      end
+
+      # (internal) Returns max image count as integer or nil. Used for the picture editor in element editor views.
+      def max_image_count
+        return nil if !@options
+        image_count = @options[:maximum_amount_of_images] || @options[:max_images]
+        image_count.blank? ? nil : image_count.to_i
       end
 
       # Renders a toolbar button for the Alchemy toolbar
@@ -220,7 +219,7 @@ module Alchemy
       # == Example
       #
       #   <%= toolbar_button(
-      #     icon: :plus,
+      #     icon: 'create',
       #     label: 'Create',
       #     url: new_resource_path,
       #     title: 'Create Resource',
@@ -260,7 +259,7 @@ module Alchemy
           active: false,
           link_options: {},
           dialog_options: {},
-          loading_indicator: false
+          loading_indicator: true
         }.merge(options.symbolize_keys)
         button = render(
           'alchemy/admin/partials/toolbar_button',
@@ -277,11 +276,11 @@ module Alchemy
       #
       # == Example
       #
-      #   <% label_title = Alchemy.t("Create #{resource_name}", default: Alchemy.t('Create')) %>
+      #   <% label_title = _t("Create #{resource_name}", default: _t('Create')) %>
       #   <% toolbar(
       #     buttons: [
       #       {
-      #         icon: :plus,
+      #         icon: 'create',
       #         label: label_title,
       #         url: new_resource_path,
       #         title: label_title,
@@ -302,17 +301,41 @@ module Alchemy
       #
       def toolbar(options = {})
         defaults = {
-          buttons: [],
-          search: true
+          :buttons => [],
+          :search => true
         }
         options = defaults.merge(options)
         content_for(:toolbar) do
-          content = <<-CONTENT.strip_heredoc
-            #{options[:buttons].map { |button_options| toolbar_button(button_options) }.join}
-            #{render('alchemy/admin/partials/search_form', url: options[:search_url]) if options[:search]}
+          content = <<-CONTENT
+#{options[:buttons].map { |button_options| toolbar_button(button_options) }.join()}
+          #{render('alchemy/admin/partials/search_form', :url => options[:search_url]) if options[:search]}
           CONTENT
           content.html_safe
         end
+      end
+
+      # Renders the row for a resource record in the resources table.
+      #
+      # This helper has a nice fallback. If you create a partial for your record then this partial will be rendered.
+      #
+      # Otherwise the default +app/views/alchemy/admin/resources/_resource.html.erb+ partial gets rendered.
+      #
+      # == Example
+      #
+      # For a resource named +Comment+ you can create a partial named +_comment.html.erb+
+      #
+      #   # app/views/admin/comments/_comment.html.erb
+      #   <tr>
+      #     <td><%= comment.title %></td>
+      #     <td><%= comment.body %></td>
+      #   </tr>
+      #
+      # NOTE: Alchemy gives you a local variable named like your resource
+      #
+      def render_resources
+        render :partial => resource_name, :collection => resources_instance_variable
+      rescue ActionView::MissingTemplate
+        render :partial => 'resource', :collection => resources_instance_variable
       end
 
       # (internal) Used by upload form
@@ -327,70 +350,78 @@ module Alchemy
 
       # Renders a textfield ready to display a datepicker
       #
-      # A Javascript observer converts this into a fancy Datepicker.
-      # If you pass +'datetime'+ as +:type+ the datepicker will also have a Time select.
-      # If you pass +'time'+ as +:type+ the datepicker will only have a Time select.
+      # Uses a HTML5 <tt><input type="date"></tt> field.
       #
-      # The date value gets localized via +I18n.l+. The format on Time and Date is +datepicker+, +timepicker+
-      # or +datetimepicker+, if you pass another +type+.
-      #
-      # This helper always renders "text" as input type because:
-      # HTML5 supports input types like 'date' but Browsers are using the users OS settings
-      # to validate the input format. Since Alchemy is localized in the backend the date formats
-      # should be aligned with the users locale setting in the backend but not the OS settings.
-      #
-      # === Date Example
+      # === Example
       #
       #   <%= alchemy_datepicker(@person, :birthday) %>
-      #
-      # === Datetime Example
-      #
-      #   <%= alchemy_datepicker(@page, :public_on, type: 'datetime') %>
-      #
-      # === Time Example
-      #
-      #   <%= alchemy_datepicker(@meeting, :starts_at, type: 'time') %>
       #
       # @param [ActiveModel::Base] object
       #   An instance of a model
       # @param [String or Symbol] method
       #   The attribute method to be called for the date value
       #
-      # @option html_options [String] :data-datepicker-type (type)
-      #   The value of the data attribute for the type
-      # @option html_options [String] :class (type)
+      # @option html_options [String] :type ('date')
+      #   The type of text field
+      # @option html_options [String] :class ('thin_border date')
       #   CSS classes of the input field
-      # @option html_options [String] :value (value of method on object)
-      #   The value the input displays. If you pass a String its parsed with +Time.parse+
+      # @option html_options [String] :value (object.send(method.to_sym).nil? ? nil : l(object.send(method.to_sym), :format => :datepicker))
+      #   The value the input displays
       #
-      def alchemy_datepicker(object, method, html_options = {})
-        type = html_options.delete(:type) || 'date'
-        date = html_options.delete(:value) || object.send(method.to_sym).presence
-        date = Time.zone.parse(date) if date.is_a?(String)
-        value = date ? l(date, format: "alchemy.#{type}picker".to_sym) : nil
-
-        text_field object.class.name.demodulize.underscore.to_sym,
-          method.to_sym, {type: "text", class: type, "data-datepicker-type" => type, value: value}.merge(html_options)
+      def alchemy_datepicker(object, method, html_options={})
+        value = nil
+        if object.send(method.to_sym).present?
+          value = l(object.send(method.to_sym), format: :datepicker)
+        elsif html_options[:value].present?
+          date = html_options.delete(:value)
+          date = Time.parse(date) if date.is_a?(String)
+          value = l(date, format: :datepicker)
+        end
+        text_field object.class.name.underscore.to_sym, method.to_sym, html_options.merge({
+          type: 'date',
+          class: 'date',
+          value: value
+        })
       end
 
-      # Render a hint icon with tooltip for given object.
-      # The model class needs to include the hints module
+      # Merges the params-hash with the given hash
+      def merge_params(p={})
+        params.merge(p).delete_if { |k, v| v.blank? }
+      end
+
+      # Deletes one or several params from the params-hash and merges some new params in
+      def merge_params_without(excludes, p={})
+        current_params = params.clone.symbolize_keys
+        if excludes.is_a?(Array)
+          excludes.map { |i| current_params.delete(i.to_sym) }
+        else
+          current_params.delete(excludes.to_sym)
+        end
+        current_params.merge(p).delete_if { |k, v| v.blank? }
+      end
+
+      # Deletes all params from the params-hash except the given ones and merges some new params in
+      def merge_params_only(includes, p={})
+        current_params = params.clone.symbolize_keys
+        if includes.is_a?(Array)
+          symbolized_includes = includes.map(&:to_sym)
+          current_params.delete_if { |k, v| !symbolized_includes.include?(k) }
+        else
+          current_params.delete_if { |k, v| k != includes.to_sym }
+        end
+        current_params.merge(p).delete_if { |k, v| v.blank? }
+      end
+
       def render_hint_for(element)
         return unless element.has_hint?
-        content_tag :span, class: 'hint-with-icon' do
-          render_icon('question-circle') +
-            content_tag(:span, element.hint.html_safe, class: 'hint-bubble')
+        link_to '#', :class => 'hint' do
+          render_icon(:hint) + content_tag(:span, element.hint.html_safe, :class => 'bubble')
         end
       end
 
       # Appends the current controller and action to body as css class.
-      def alchemy_body_class
-        [
-          controller_name,
-          action_name,
-          content_for(:main_menu_style),
-          content_for(:alchemy_body_class)
-        ].compact
+      def body_class
+        "#{controller_name} #{action_name}"
       end
 
       # (internal) Returns options for the clipboard select tag
@@ -410,30 +441,6 @@ module Alchemy
         Alchemy::Config.get(:format_matchers)['link_url'] || /^(mailto:|\/|[a-z]+:\/\/)/
       end
 
-      # Renders a hint with tooltip
-      #
-      # == Example
-      #
-      #   <%= hint_with_tooltip('Page layout is missing', icon: 'info') %>
-      #
-      # @param text [String] - The text displayed in the tooltip
-      # @param icon: 'exclamation-triangle' [String] - Icon name
-      #
-      # @return [String]
-      def hint_with_tooltip(text, icon: 'exclamation-triangle')
-        content_tag :span, class: 'hint-with-icon' do
-          render_icon(icon) + content_tag(:span, text, class: 'hint-bubble')
-        end
-      end
-
-      # Renders a warning icon with a hint
-      # that explains the user that the page layout is missing
-      def page_layout_missing_warning
-        hint_with_tooltip(
-          Alchemy.t(:page_definition_missing)
-        )
-      end
-
       private
 
       def permission_from_options(options)
@@ -448,9 +455,10 @@ module Alchemy
         action_controller = options[:url].gsub(/\A\//, '').split('/')
         [
           action_controller.last.to_sym,
-          action_controller[0..action_controller.length - 2].join('_').to_sym
+          action_controller[0..action_controller.length-2].join('_').to_sym
         ]
       end
+
     end
   end
 end

@@ -1,13 +1,23 @@
 <% if @page == locked_page %>
-  <%= render 'alchemy/admin/pages/current_page', current_page: @page %>
+  <%= render 'page_status' %>
 <% else %>
-  <div class="locked_page wide" id="locked_page_<%= locked_page.id %>">
+  <div class="subnavi_tab wide" id="locked_page_<%= locked_page.id %>">
     <%= link_to alchemy.edit_admin_page_path(locked_page) do %>
-      <%= render 'alchemy/admin/pages/page_status', page: locked_page, truncate: true %>
+      <% if locked_page.layout_description.blank? %>
+        <span class="inline warning icon" title="<%= _t(:page_layout_description_missing) %>"></span>
+      <% end %>
+      <span class="page_name" title="<%= locked_page.name %>">
+        <%= truncate locked_page.name, length: 15 %>
+      </span>
+      <%- if multi_language? -%>
+        <span class="page_language" title="<%= locked_page.language.name %>">
+          <%= locked_page.language_code %>
+        </span>
+      <%- end -%>
     <% end %>
     <%= form_tag(alchemy.unlock_admin_page_path(locked_page), remote: true) do %>
-      <button class="icon_button small" title="<%= Alchemy.t(:explain_unlocking) %>">
-        <%= render_icon(:times, size: 'xs') %>
+      <button class="icon_button small" title="<%= _t(:explain_unlocking) %>">
+        <%= render_icon('close small') %>
       </button>
     <% end %>
   </div>

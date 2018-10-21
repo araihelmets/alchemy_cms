@@ -1,53 +1,45 @@
 <li>
   <div class="sitemap_page ">
     <div class="sitemap_left_images">
-      <i class="icon far fa-file fa-lg"></i>
+      <%= render_icon(:page) %>
     </div>
     <div class="sitemap_right_tools">
-      {{#unless redirects_to_external}}
-      <div class="button_with_label sitemap_tool">
-        <%= link_to render_icon('th-list'),
-          alchemy.list_admin_elements_path(page_id: '__ID__').gsub('__ID__', '{{id}}'),
+      <% unless page_for_links.redirects_to_external? %>
+        <%= link_to '',
+          alchemy.list_admin_elements_path(page_id: page_for_links.id),
           remote: true,
           data: {
-            'page-id' => '{{id}}',
-            url: @url_prefix + '{{urlname}}'
+            'page-id' => page_for_links.id,
+            url: @url_prefix + page_for_links.urlname
           },
-          class: "show_elements_to_link"
+          class: "show_elements_to_link",
+          title: _t(:show_elements_from_page)
         %>
-        <label class="left"><%= Alchemy.t(:show_elements_from_page) %></label>
-      </div>
-      {{/unless}}
+      <% end %>
     </div>
     <div class="page_infos">
-      <span class="page_status">
-        <i class="icon fas fa-fw fa-compass {{#unless public}}disabled{{/unless}}" data-fa-transform="shrink-2"></i>
-      </span>
-      <span class="page_status">
-        <i class="icon fas fa-fw fa-eye {{#unless visible}}disabled{{/unless}}" data-fa-transform="shrink-2"></i>
-      </span>
-      <span class="page_status">
-        <i class="icon fas fa-fw fa-lock {{#unless restricted}}disabled{{/unless}}" data-fa-transform="shrink-2"></i>
-      </span>
+      <span class="page_status <%= page_for_links.public ? 'public' : 'not_public' %>" title="<%= page_for_links.status_title(:public) %>"></span>
+      <span class="page_status <%= page_for_links.visible ? 'visible' : 'not_visible' %>" title="<%= page_for_links.status_title(:visible) %>"></span>
+      <span class="page_status <%= page_for_links.restricted ? 'restricted' : 'not_restricted' %>" title="<%= page_for_links.status_title(:restricted) %>"></span>
     </div>
-    <div class="sitemap_sitename" id="sitemap_sitename_{{id}}" name="/<%= "#{Alchemy::Language.current.code}/" if multi_language? %>{{urlname}}">
-      {{#if redirects_to_external}}
-        <span class="sitemap_pagename_link inactive">{{ name }}</span>
-      {{else}}
-        <%= link_to('{{ name }}', '', {
+    <div class="sitemap_sitename" id="sitemap_sitename_<%= page_for_links.id %>" name="<%= parse_sitemap_name(page_for_links) %>">
+      <% if page_for_links.redirects_to_external? %>
+        <span class="sitemap_pagename_link inactive"><%= page_for_links.name %></span>
+      <% else %>
+        <%= link_to(page_for_links.name, '', {
           data: {
-            'page-id' => '{{id}}',
-            url: @url_prefix + '{{urlname}}'
+            'page-id' => page_for_links.id,
+            url: @url_prefix + page_for_links.urlname
           },
-          title: Alchemy.t('page_for_links.choose_page', name: '{{name}}'),
+          title: _t('page_for_links.choose_page', name: page_for_links.name),
           class: "sitemap_pagename_link"
         }) %>
-      {{/if}}
+      <% end %>
     </div>
   </div>
-  {{#if children}}
-    <ul id="page_{{id}}_children">
-      {{> list}}
+  <% if page_for_links.children.present? %>
+    <ul id="page_<%= page_for_links.id %>_children">
+      <%= render partial: 'page_for_links', collection: page_for_links.children, locals: {area_name: @area_name} %>
     </ul>
-  {{/if}}
+  <% end %>
 </li>

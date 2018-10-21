@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 Rails.application.routes.draw do
 
   mount JasmineRails::Engine => "/specs" if defined?(JasmineRails)
@@ -8,8 +6,6 @@ Rails.application.routes.draw do
 
   namespace :admin do
     resources :events
-    resources :locations
-    resources :series
   end
 
   mount Alchemy::Engine => "/"

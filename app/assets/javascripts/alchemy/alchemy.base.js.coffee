@@ -34,8 +34,8 @@ $.extend Alchemy,
   pleaseWaitOverlay: (show = true) ->
     $overlay = $('#overlay')
     if show
-      spinner = new Alchemy.Spinner('medium')
-      spinner.spin $overlay
+      spinner = Alchemy.Spinner.medium()
+      $overlay.append(spinner.spin().el)
       $overlay.show()
     else
       $overlay.find('.spinner').remove()
@@ -44,29 +44,35 @@ $.extend Alchemy,
 
   # Shows spinner while loading images and
   # fades the image after its been loaded
-  ImageLoader: (scope = document, options = {fill: '#fff'}) ->
+  ImageLoader: (scope = document, options = {color: '#fff'}) ->
     $('img', scope).each ->
-      if !this.complete
-        image = $(this).hide()
-        $parent = image.parent()
-        spinner = new Alchemy.Spinner('small', options)
-        spinner.spin $parent[0]
-        image.on 'load', ->
-          spinner.stop()
-          image.fadeIn 400
-        image.on 'error', ->
-          spinner.stop()
-          $parent.html('<span class="icon warn"/>')
+      image = $(this).hide()
+      $parent = image.parent()
+      spinner = Alchemy.Spinner.small options
+      spinner.spin $parent[0]
+      image.on 'load', ->
+        spinner.stop()
+        image.fadeIn 400
+      image.on 'error', ->
+        spinner.stop()
+        $parent.html('<span class="icon warn"/>')
 
-  # Removes the picture from essence picture thumbnail
   removePicture: (selector) ->
     $form_field = $(selector)
-    $element = $form_field.closest(".element-editor")
-    if $form_field[0]
+    $element = $form_field.parents(".element_editor")
+    if $form_field
       $form_field.val ""
-      $element.find(".thumbnail_background").html('<i class="icon far fa-image fa-fw"/>')
+      $form_field.prev().remove()
+      $form_field.parent().addClass "missing"
       Alchemy.setElementDirty $element
-    false
+    return
+
+  # Sets the element to saved state
+  setElementSaved: (selector) ->
+    $element = $(selector)
+    Alchemy.setElementClean selector
+    Alchemy.Buttons.enable $element
+    return true
 
   # Initializes all select tag with .alchemy_selectbox class as selectBoxIt instance
   # Pass a jQuery scope to only init a subset of selectboxes.
@@ -74,6 +80,10 @@ $.extend Alchemy,
     $("select.alchemy_selectbox", scope).select2
       minimumResultsForSearch: 7
       dropdownAutoWidth: true
+    return
+
+  Buttons: (options) ->
+    $("button, input:submit, a.button").button options
     return
 
   # Selects cell tab for given name.
@@ -103,13 +113,8 @@ $.extend Alchemy,
   # Logs exception to js console, if present.
   debug: (e) ->
     if window["console"]
-      console.warn(e)
-    return
-
-  # Logs errors to js console, if present.
-  log_error: (e) ->
-    if window["console"]
-      console.error e
+      console.debug e
+      console.trace()
     return
 
   getUrlParam: (name) ->

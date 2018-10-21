@@ -1,29 +1,19 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Page::PageNatures
+
     extend ActiveSupport::Concern
-
-    def public?
-      current_time = Time.current
-      already_public_for?(current_time) && still_public_for?(current_time)
-    end
-
-    def expiration_time
-      public_until? ? public_until - Time.current : nil
-    end
 
     def taggable?
       definition['taggable'] == true
     end
 
     def rootpage?
-      !new_record? && parent_id.blank?
+      !self.new_record? && self.parent_id.blank?
     end
 
     def systempage?
-      return true if Page.count.zero?
-      rootpage? || (parent_id == Page.root.id && !language_root?)
+      return true if Page.root.nil?
+      rootpage? || (self.parent_id == Page.root.id && !self.language_root?)
     end
 
     def folded?(user_id)
@@ -35,44 +25,20 @@ module Alchemy
       definition["feed"]
     end
 
-    # Returns an Array of Alchemy roles which are able to edit this template
-    #
-    #     # config/alchemy/page_layouts.yml
-    #     - name: contact
-    #       editable_by:
-    #         - freelancer
-    #         - admin
-    #
-    # @returns Array
-    #
-    def has_limited_editors?
-      definition["editable_by"].present?
-    end
-
-    def editor_roles
-      return unless has_limited_editors?
-      definition["editable_by"]
-    end
-
-    # Returns true or false if the pages definition for config/alchemy/page_layouts.yml contains redirects_to_external: true
+    # Returns true or false if the pages layout_description for config/alchemy/page_layouts.yml contains redirects_to_external: true
     def redirects_to_external?
       !!definition["redirects_to_external"]
     end
 
     def has_controller?
-      !PageLayout.get(page_layout).nil? && !PageLayout.get(page_layout)["controller"].blank?
-    end
-
-    # True if page locked_at timestamp and locked_by id are set
-    def locked?
-      locked_by? && locked_at?
+      !PageLayout.get(self.page_layout).nil? && !PageLayout.get(self.page_layout)["controller"].blank?
     end
 
     def controller_and_action
-      if has_controller?
+      if self.has_controller?
         {
-          controller: definition["controller"].gsub(/(^\b)/, "/#{$1}"),
-          action: definition["action"]
+          controller: self.layout_description["controller"].gsub(/(^\b)/, "/#{$1}"),
+          action: self.layout_description["action"]
         }
       end
     end
@@ -93,24 +59,26 @@ module Alchemy
     # @param [Symbol] status_type
     #
     def status_title(status_type)
-      Alchemy.t(status[status_type].to_s, scope: "page_states.#{status_type}")
+      I18n.t(self.status[status_type].to_s, scope: "page_states.#{status_type}")
     end
 
-    # Returns the self#page_layout definition from config/alchemy/page_layouts.yml file.
-    def definition
-      definition = PageLayout.get(page_layout)
-      if definition.nil?
-        log_warning "Page definition for `#{page_layout}` not found. Please check `page_layouts.yml` file."
+    # Returns the self#page_layout description from config/alchemy/page_layouts.yml file.
+    def layout_description
+      return {} if self.systempage?
+      description = PageLayout.get(self.page_layout)
+      if description.nil?
+        log_warning "Page layout description for `#{self.page_layout}` not found. Please check `page_layouts.yml` file."
         return {}
       end
-      definition
+      description
     end
+    alias_method :definition, :layout_description
 
     # Returns translated name of the pages page_layout value.
     # Page layout names are defined inside the config/alchemy/page_layouts.yml file.
     # Translate the name in your config/locales language yml file.
     def layout_display_name
-      Alchemy.t(page_layout, scope: 'page_layout_names')
+      I18n.t(self.page_layout, :scope => :page_layout_names)
     end
 
     # Returns the name for the layout partial
@@ -142,49 +110,5 @@ module Alchemy
       read_attribute(:published_at) || updated_at
     end
 
-    # Returns true if the page cache control headers should be set.
-    #
-    # == Disable Alchemy's page caching globally
-    #
-    #     # config/alchemy/config.yml
-    #     ...
-    #     cache_pages: false
-    #
-    # == Disable caching on page layout level
-    #
-    #     # config/alchemy/page_layouts.yml
-    #     - name: contact
-    #       cache: false
-    #
-    # == Note:
-    #
-    # This only sets the cache control headers and skips rendering of the page body,
-    # if the cache is fresh.
-    # This does not disable the fragment caching in the views.
-    # So if you don't want a page and it's elements to be cached,
-    # then be sure to not use <% cache element %> in the views.
-    #
-    # @returns Boolean
-    #
-    def cache_page?
-      return false unless caching_enabled?
-      page_layout = PageLayout.get(self.page_layout)
-      page_layout['cache'] != false && page_layout['searchresults'] != true
-    end
-
-    private
-
-    def caching_enabled?
-      Alchemy::Config.get(:cache_pages) &&
-        Rails.application.config.action_controller.perform_caching
-    end
-
-    def already_public_for?(time)
-      !public_on.nil? && public_on <= time
-    end
-
-    def still_public_for?(time)
-      public_until.nil? || public_until >= time
-    end
   end
 end

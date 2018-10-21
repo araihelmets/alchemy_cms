@@ -1,43 +1,39 @@
-# frozen_string_literal: true
-
 module Alchemy
   module BaseHelper
+
+    def _t(key, *args)
+      I18n.t(key, *args)
+    end
+
     # An alias for truncate.
     # Left here for downwards compatibilty.
     def shorten(text, length)
-      text.truncate(length: length)
+      text.truncate(:length => length)
     end
 
-    # Logs a message in the Rails logger (warn level)
-    # and optionally displays an error message to the user.
+    def parse_sitemap_name(page)
+      if multi_language?
+        pathname = "/#{Language.current.code}/#{page.urlname}"
+      else
+        pathname = "/#{page.urlname}"
+      end
+      pathname
+    end
+
+    # Logs a message in the Rails logger (warn level) and optionally displays an error message to the user.
     def warning(message, text = nil)
-      Logger.warn(message, caller(0..0))
+      Logger.warn(message, caller.first)
       unless text.nil?
-        warning = content_tag('p', class: 'content_editor_error') do
+        warning = content_tag('p', :class => 'content_editor_error') do
           render_icon('warning') + text
         end
         return warning
       end
     end
 
-    # Render a Fontawesome icon
-    #
-    # @param icon_class [String] Fontawesome icon name
-    # @param size: nil [String] Fontawesome icon size
-    # @param transform: nil [String] Fontawesome transform style
-    #
-    # @return [String]
-    def render_icon(icon_class, options = {})
-      options = {style: 'solid'}.merge(options)
-      classes = [
-        "icon fa-fw",
-        "fa-#{icon_class}",
-        "fa#{options[:style].first}",
-        options[:size] ? "fa-#{options[:size]}" : nil,
-        options[:transform] ? "fa-#{options[:transform]}" : nil,
-        options[:class]
-      ].compact
-      content_tag('i', nil, class: classes)
+    # Returns an icon
+    def render_icon(icon_class)
+      content_tag('span', '', :class => "icon #{icon_class}")
     end
 
     # Returns a div with an icon and the passed content
@@ -51,12 +47,38 @@ module Alchemy
     #   <% end %>
     #
     def render_message(type = :info, msg = nil, &blk)
-      icon_class = message_icon_class(type)
       if block_given?
-        content_tag :div, render_icon(icon_class) + capture(&blk), class: "#{type} message"
+        content_tag :div, render_icon(type) + capture(&blk), :class => "#{type} message"
       else
-        content_tag :div, render_icon(icon_class) + msg, class: "#{type} message"
+        content_tag :div, render_icon(type) + msg, :class => "#{type} message"
       end
+    end
+
+    # Returns an array of all pages in the same branch from current.
+    # I.e. used to find the active page in navigation.
+    def breadcrumb(current)
+      return [] if current.nil?
+      current.self_and_ancestors.where("parent_id IS NOT NULL")
+    end
+
+    # Returns the Alchemy configuration.
+    #
+    # *DO NOT REMOVE THIS HERE.*
+    #
+    # We need this, if an external engine or app includes this module into actionview.
+    #
+    def configuration(name)
+      Alchemy::Config.get(name)
+    end
+
+    # Returns true if Alchemy is in multi language mode
+    #
+    # *DO NOT REMOVE THIS HERE.*
+    #
+    # We need this, if an external engine or app includes this module into actionview.
+    #
+    def multi_language?
+      Alchemy::Language.published.count > 1
     end
 
     # Renders the flash partial (+alchemy/admin/partials/flash+)
@@ -83,18 +105,5 @@ module Alchemy
       end
     end
 
-    # Returns the FontAwesome icon name for given message type
-    #
-    # @param message_type [String] The message type. One of +warning+, +info+, +notice+, +error+
-    # @return [String] The FontAwesome icon name
-    def message_icon_class(message_type)
-      case message_type.to_s
-      when 'warning', 'warn', 'alert' then 'exclamation'
-      when 'notice' then 'check'
-      when 'error' then 'bug'
-      else
-        message_type
-      end
-    end
   end
 end

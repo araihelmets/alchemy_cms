@@ -1,6 +1,3 @@
-$dialog-transition-duration: 150ms;
-
-.alchemy-image-overlay-container,
 .alchemy-dialog-container {
   position: fixed;
   overflow: auto;
@@ -11,11 +8,8 @@ $dialog-transition-duration: 150ms;
   height: 100%;
   text-align: center;
   white-space: nowrap;
-  opacity: 0;
-  transform: scale(0.98);
-  transition-property: transform, opacity;
-  transition-duration: $dialog-transition-duration;
-  transition-timing-function: ease-in;
+  @include opacity(0);
+  @include transition(opacity 200ms linear);
 
   // vertical aligment
   &:before {
@@ -28,12 +22,10 @@ $dialog-transition-duration: 150ms;
   }
 
   &.open {
-    opacity: 1;
-    transform: scale(1);
+    @include opacity(1);
   }
 }
 
-.alchemy-image-overlay,
 .alchemy-dialog-overlay {
   position: fixed;
   top: 0;
@@ -42,94 +34,93 @@ $dialog-transition-duration: 150ms;
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.0);
-  transition: background-color $dialog-transition-duration linear;
+  @include transition(background-color 200ms linear);
+
+  &.open {
+    background-color: rgba(0, 0, 0, 0.4);
+  }
 
   &.closable {
     cursor: pointer;
   }
 }
 
-.alchemy-dialog-overlay {
-
-  &.open {
-    background-color: rgba($dialog-overlay-color, $dialog-overlay-opacity);
-  }
-}
-
-.alchemy-dialog,
-.alchemy-image-overlay-dialog {
+.alchemy-dialog {
   position: relative;
   max-width: 100%;
   display: inline-block;
   vertical-align: middle;
   text-align: left;
-}
-
-.alchemy-dialog {
   white-space: normal;
+  background-color: $light-gray;
   margin: 2*$default-margin;
   @include border-top-radius($default-border-radius);
-  box-shadow: $dialog-box-shadow;
-  background-color: $dialog-background-color;
-  transition: min-height $dialog-transition-duration ease-in-out;
+  @include box-shadow(0 0 2px rgba(#000,0.8));
+  @include transition(min-height 200ms ease-in-out);
+
+  &.modal {
+    @include box-shadow(0 0 4px #666);
+  }
 
   div#jscropper {
     padding: 2 * $default-padding;
 
     .thumbnail_background {
+      @extend %thumbnail-background;
       width: 800px;
       height: 600px;
       position: relative;
     }
 
-    form,
     .info.message {
-      position: absolute;
-      right: 2 * $default-padding;
-      width: 256px;
-    }
-
-    .info.message {
-      top: 2 * $default-padding;
+      float: right;
+      width: 134px;
       margin: 0 0 0 8px;
       padding: 0 8px 0 32px;
     }
 
-    .jcrop-holder {
-      display: inline-block;
-    }
+    .jcrop-holder { @include inline-block }
 
     img {
       width: auto;
       max-height: 600px;
     }
 
+    .spinner {
+      left: 50% !important;
+    }
+
     form {
       padding: 0;
+      position: absolute;
       bottom: 2 * $default-padding;
+      right: 2 * $default-padding;
+      width: 176px;
       margin-left: 8px;
 
-      button {
+      .reset_mask, button {
+        display: block;
         margin-bottom: 0;
-        width: calc(50% - #{$default-padding});
+        text-align: center;
       }
 
-      button[type="submit"] {
-        float: right;
-      }
+      .reset_mask { padding-top: 4px }
+
+      button { width: 100% }
     }
   }
 }
 
 .alchemy-dialog-header {
+  @include box-sizing(border-box);
   position: relative;
   height: $dialog-header-height;
   padding: 0 2*$default-padding;
   line-height: $dialog-header-height;
-  background: $dialog-header-color;
-  color: $dialog-header-text-color;
+  background: $header-color;
+  color: $header-text-color;
   font-weight: normal;
-  font-size: $dialog-header-font-size;
+  font-size: $header-font-size;
   @include border-top-radius($default-border-radius);
 
   .ui-draggable & {
@@ -144,28 +135,26 @@ $dialog-transition-duration: 150ms;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  @include antialiased-font-smoothing;
 }
 
-.alchemy-image-overlay-close,
 .alchemy-dialog-close {
   position: absolute;
-  z-index: 1;
-  cursor: pointer;
-}
-
-.alchemy-dialog-close {
   top: 0;
   right: 2*$default-padding;
+  z-index: 1;
   padding: 0 $default-padding;
   color: inherit;
+  cursor: pointer;
 
-  .icon {
-    color: inherit;
+  .icon.close.small {
+    line-height: 1;
+    font-size: 16px;
+    vertical-align: text-top;
   }
 }
 
 .alchemy-dialog-body {
+  @include box-sizing(border-box);
   position: relative;
   color: $text-color;
 
@@ -181,6 +170,18 @@ $dialog-transition-duration: 150ms;
     }
   }
 
+  ul#sitemap ul li span.sitemap_sitename {
+
+    &.selected_page a {
+      font-weight: bold;
+      padding-left: 4px;
+    }
+
+    a:hover {
+      font-weight: bold;
+    }
+  }
+
   .buttons {
     text-align: right;
 
@@ -192,7 +193,11 @@ $dialog-transition-duration: 150ms;
 }
 
 .alchemy-dialog-buttons {
-  padding-top: 4*$default-padding;
+  @include box-sizing(border-box);
+  float: left;
+  clear: both;
+  width: 100%;
+  padding: 4*$default-padding 0;
   text-align: right;
 
   button:first-child {
@@ -205,9 +210,5 @@ $dialog-transition-duration: 150ms;
 
   .ui-tabs-panel {
     padding: 4*$default-padding;
-  }
-
-  .ui-tabs.ui-corner-all {
-    border-radius: 0;
   }
 }

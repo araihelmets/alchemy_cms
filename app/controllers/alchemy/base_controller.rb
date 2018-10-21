@@ -1,19 +1,16 @@
-# frozen_string_literal: true
-
 # This is the main Alchemy controller all other controllers inherit from.
 #
 module Alchemy
   class BaseController < ApplicationController
-    include Alchemy::ConfigurationMethods
-    include Alchemy::AbilityHelper
     include Alchemy::ControllerActions
     include Alchemy::Modules
-    include Alchemy::SSLProtection
 
     protect_from_forgery
 
     before_action :mailer_set_url_options
     before_action :set_locale
+
+    helper_method :multi_site?
 
     helper 'alchemy/admin/form'
 
@@ -26,11 +23,32 @@ module Alchemy
     # Sets +I18n.locale+ to current Alchemy language.
     #
     def set_locale
-      ::I18n.locale = Language.current.locale
+      ::I18n.locale = Language.current.code
+    end
+
+    # Returns the configuration value of given key.
+    #
+    # Config file is in +config/alchemy/config.yml+
+    #
+    def configuration(name)
+      Alchemy::Config.get(name)
+    end
+
+    def multi_language?
+      Language.published.count > 1
+    end
+
+    def multi_site?
+      Site.count > 1
     end
 
     def not_found_error!(msg = "Not found \"#{request.fullpath}\"")
-      raise ActionController::RoutingError, msg
+      raise ActionController::RoutingError.new(msg)
+    end
+
+    # Shortcut for Alchemy::I18n.translate method
+    def _t(key, *args)
+      I18n.t(key, *args)
     end
 
     # Store current request path into session,
@@ -43,14 +61,40 @@ module Alchemy
       ActionMailer::Base.default_url_options[:host] = request.host_with_port
     end
 
+    # Enforce ssl for login and all admin modules.
+    #
+    # Default is +false+
+    #
+    # === Usage
+    #
+    #   # config/alchemy/config.yml
+    #   ...
+    #   require_ssl: true
+    #   ...
+    #
+    # === Note
+    #
+    # You have to create a ssl certificate
+    # if you want to use the ssl protection.
+    #
+    def ssl_required?
+      !Rails.env.test? && configuration(:require_ssl)
+    end
+
+    # Redirects current request to https.
+    def enforce_ssl
+      redirect_to url_for(request.params.merge(protocol: 'https'))
+    end
+
     protected
 
     def permission_denied(exception = nil)
       if exception
-        Rails.logger.debug <<-WARN.strip_heredoc
-          /!\\ Failed to permit #{exception.action} on #{exception.subject.inspect} for:
-          #{current_alchemy_user.inspect}
-        WARN
+        Rails.logger.debug <<-WARN
+
+/!\\ Failed to permit #{exception.action} on #{exception.subject.inspect} for:
+#{current_alchemy_user.inspect}
+WARN
       end
       if current_alchemy_user
         handle_redirect_for_user
@@ -60,7 +104,7 @@ module Alchemy
     end
 
     def handle_redirect_for_user
-      flash[:warning] = Alchemy.t('You are not authorized')
+      flash[:warning] = _t('You are not authorized')
       if can?(:index, :alchemy_admin_dashboard)
         redirect_or_render_notice
       else
@@ -72,7 +116,7 @@ module Alchemy
       if request.xhr?
         respond_to do |format|
           format.js do
-            render plain: flash.discard(:warning), status: 403
+            render text: flash.discard(:warning), status: 403
           end
           format.html do
             render partial: 'alchemy/admin/partials/flash',
@@ -85,7 +129,7 @@ module Alchemy
     end
 
     def handle_redirect_for_guest
-      flash[:info] = Alchemy.t('Please log in')
+      flash[:info] = _t('Please log in')
       if request.xhr?
         render :permission_denied
       else
@@ -95,11 +139,9 @@ module Alchemy
     end
 
     # Logs the current exception to the error log.
-    def exception_logger(error)
-      Rails.logger.error("\n#{error.class} #{error.message} in #{error.backtrace.first}")
-      Rails.logger.error(error.backtrace[1..50].each { |line|
-        line.gsub(/#{Rails.root.to_s}/, '')
-      }.join("\n"))
+    def exception_logger(e)
+      Rails.logger.error("\n#{e.class} #{e.message} in #{e.backtrace.first}")
+      Rails.logger.error(e.backtrace[1..50].each { |l| l.gsub(/#{Rails.root.to_s}/, '') }.join("\n"))
     end
   end
 end

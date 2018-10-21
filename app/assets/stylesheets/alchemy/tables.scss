@@ -4,43 +4,21 @@ table {
   padding: 0;
   font-size: inherit;
   width: 100%;
-
-  &.list .tools {
-    button, a {
-      display: inline-block;
-      width: 18px;
-      height: 18px;
-      padding: 0;
-      margin: 0 $default-margin;
-      line-height: inherit;
-      text-align: center;
-
-      > .icon {
-        margin: 0;
-      }
-    }
-  }
 }
 
 .list td, .list th {
-  padding: 2*$default-padding;
+  padding: $default-padding 2*$default-padding;
   vertical-align: top;
   line-height: 18px;
   border-right: 1px solid $medium-gray;
-  transition: background-color $transition-duration;
-
-  &:last-child {
-    border-right: 0 none;
-  }
 
   &.wrap-text {
     white-space: normal !important;
   }
+}
 
-  &.icon {
-    width: 16px;
-    text-align: center;
-  }
+.list td:first-child, .list th:first-child {
+  border-left: 1px solid $medium-gray
 }
 
 .list th {
@@ -51,19 +29,36 @@ table {
   }
 }
 
+.floatThead-container {
+  background: $light-gray;
+  overflow: visible !important; // the javascript author thought that, but ....
+
+  &:after {
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    @include background(linear-gradient(top, $light-gray 0%, rgba($light-gray, .0) 100%));
+    content: '';
+  }
+}
+
 th {
   white-space: nowrap;
   text-align: left;
   vertical-align: top;
+  background: $light-gray;
   border-bottom: 1px solid $medium-gray;
-  font-weight: bold;
+  font-weight: normal;
+  text-transform: uppercase;
 
   i {
     font-style: normal;
     position: absolute;
     right: 2px;
     top: 4px;
-    text-shadow: 1px 1px 1px #fff;
+    @include text-shadow(1px 1px 1px #fff);
   }
 
   a {
@@ -72,7 +67,7 @@ th {
       display: block;
       margin: -4px -8px;
       padding: 4px 18px 4px 8px;
-      text-shadow: 1px 1px 1px #fff;
+      @include text-shadow(1px 1px 1px #fff);
     }
 
     &.sorted {
@@ -82,18 +77,27 @@ th {
   }
 }
 
-tr.even td {
-  background-color: $table-row-even-background-color;
+tr.odd td {
+  background-color: #eaf3f9;
 }
 
-tr.odd td {
-  background-color: $table-row-odd-background-color;
+tr.even td {
+  background-color: white;
 }
 
 .list tr .tools {
   width: 40px;
+  background: $light-gray;
+  border-top: 0 none;
+  border-right: 0 none;
   white-space: nowrap;
   @extend .disable-user-select;
+
+  a {
+    width: 19px;
+    height: 19px;
+    margin-right: 2px;
+  }
 
   &.long {
     width: 60px;
@@ -106,20 +110,47 @@ td.heading {
   text-decoration: underline;
 }
 
-.list .tools .icon,
-.list td.icon .icon {
+.list td.icon, .list th.icon {
+  background-color: $light-gray;
+  background-image: none;
+  border-left: 0 none;
+  padding: 0;
+  border-right: 1px solid $medium-gray;
+  text-align: center;
+  display: table-cell; // reset the .icon display: inline-block
+}
+
+.list .tools .icon, .list td.icon .icon {
+  @include inline-block;
+  width: 16px;
+  height: 16px;
   @extend .disable-user-select;
+  background-repeat: no-repeat;
   margin: 0 $default-margin;
+  text-indent: -100px;
+}
+
+.list td.icon .icon {
+  margin: $default-margin 2*$default-margin 0;
 }
 
 .list tr:hover td {
-  background-color: $table-row-hover-color;
+  background-color: $light_yellow;
 }
 
 td, th {
 
   &.center, &.boolean {
     text-align: center;
+
+    .icon.false {
+      @extend .false;
+    }
+
+    .icon.true {
+      @extend .icon;
+      @extend .true;
+    }
   }
 
   &.right {
@@ -180,32 +211,8 @@ td#user_roles {
   padding: 9px 0;
 
   label {
-    display: inline-block;
-    vertical-align: middle;
+    @include inline-block;
     white-space: nowrap;
     min-width: 40%;
-  }
-}
-
-.resources-table-wrapper {
-  padding-top: 50px;
-
-  table {
-    padding-bottom: 60px;
-  }
-}
-
-.resources-header {
-  position: fixed;
-  width: 100%;
-  top: $top-menu-height;
-  left: $main-menu-width + 9px;
-  z-index: 2;
-  margin: 0 -8px;
-  padding: 8px 16px;
-  background-color: $light-gray;
-
-  > h2, > h3 {
-    margin-bottom: 0;
   }
 }

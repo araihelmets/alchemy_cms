@@ -1,7 +1,7 @@
-# frozen_string_literal: true
-
 module Alchemy
   class EssenceLinkSerializer < ActiveModel::Serializer
+    #self.root = false
+
     attributes :id,
       :link,
       :link_title,
@@ -9,5 +9,6 @@ module Alchemy
       :link_class_name,
       :created_at,
       :updated_at
+
   end
 end

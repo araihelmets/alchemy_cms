@@ -1,56 +1,53 @@
 <div id="library_sidebar">
-  <%= render 'filter_bar' %>
-
-  <% if Alchemy::Picture.tag_counts.any? %>
-    <div class="tag-list with_filter_bar<%= ' filtered' if search_filter_params[:tagged_with].present? %>">
-      <%= render 'tag_list' %>
-    </div>
-  <% end %>
+  <%= render :partial => 'filter_bar' %>
+  <div id="tag_list" class="with_filter_bar<%= params[:tagged_with].present? ? ' filtered' : '' %>">
+    <%= render :partial => 'tag_list' %>
+  </div>
 </div>
-
-<%= form_tag delete_multiple_admin_pictures_path, method: :delete do %>
+<%= form_tag delete_multiple_admin_pictures_path, :method => :delete do %>
   <div class="selected_item_tools">
-    <h3><%= Alchemy.t(:edit_selected_pictures) %></h3>
+    <h2><%= _t(:edit_selected_pictures) %></h2>
     <%= link_to(
-      render_icon(:edit, size: 'xs') + Alchemy.t("Edit"),
+      render_icon('edit') + _t("Edit"),
       edit_multiple_admin_pictures_path,
-      class: 'button with_icon',
-      title: Alchemy.t('Edit multiple pictures'),
-      id: 'edit_multiple_pictures',
-      style: 'float: none'
+      :class => 'button with_icon',
+      :title => _t('Edit multiple pictures'),
+      :id => 'edit_multiple_pictures',
+      :style => 'float: none'
     ) %>
-    <%= button_tag render_icon(:minus, size: 'xs') + Alchemy.t("Delete"), 'data-alchemy-confirm' => {
-      title: Alchemy.t(:please_confirm),
-      message: Alchemy.t(:confirm_to_delete_images_from_server),
-      ok_label: Alchemy.t("Yes"),
-      cancel_label: Alchemy.t("No")
-    }.to_json, class: 'button with_icon' %>
-    &nbsp;<%= Alchemy.t(:or) %>&nbsp;
+    <%= button_tag render_icon('destroy') + _t("Delete"), 'data-alchemy-confirm' => {
+      :title => _t(:please_confirm),
+      :message => _t(:confirm_to_delete_images_from_server),
+      :ok_label => _t("Yes"),
+      :cancel_label => _t("No")
+    }.to_json, :class => 'button with_icon' %>
+    &nbsp;<%= _t(:or) %>&nbsp;
     <%= link_to(
-      render_icon(:times, size: 'xs') + Alchemy.t("Clear selection"),
+      render_icon('delete-small') + _t("Clear selection"),
       admin_pictures_path(
-        q: search_filter_params[:q],
-        tagged_with: search_filter_params[:tagged_with],
-        size: params[:size],
-        filter: search_filter_params[:filter]
+        :query => params[:query],
+        :tagged_with => params[:tagged_with],
+        :size => params[:size],
+        :filter => params[:filter]
       ),
-      class: 'secondary button with_icon',
-      style: 'float: none'
+      :class => 'button with_icon',
+      :style => 'float: none'
     ) %>
   </div>
   <div id="pictures">
-  <% if @pictures.blank? and @recent_pictures.blank? and search_filter_params[:q].blank? %>
-    <%= render_message do %>
-      <%= Alchemy.t(:no_images_in_archive) %>
-    <% end %>
+  <% if @pictures.blank? and @recent_pictures.blank? and params[:query].nil? %>
+    <div class="info">
+      <%= render_icon('info') %>
+      <%= _t(:no_images_in_archive) %>
+    </div>
   <% elsif @pictures.blank? and @recent_pictures.blank? %>
-    <%= render_message do %>
-      <%= Alchemy.t(:no_search_results) %>
-    <% end %>
+    <div class="info">
+      <%= render_icon('info') %>
+      <%= _t(:no_search_results) %>
+    </div>
   <% else %>
-    <%= render partial: 'picture', collection: @pictures %>
+    <%= render :partial => 'picture', :collection => @pictures %>
+    <%= paginate @pictures, theme: 'alchemy' %>
   <% end %>
   </div>
 <% end %>
-
-<%= paginate @pictures, theme: 'alchemy' %>

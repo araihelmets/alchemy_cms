@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Admin
     class ElementsController < Alchemy::Admin::BaseController
-      before_action :load_element, only: [:update, :trash, :fold, :publish]
+      before_action :load_element, only: [:update, :trash, :fold]
       authorize_resource class: Alchemy::Element
 
       def index
@@ -25,10 +23,9 @@ module Alchemy
       end
 
       def new
-        @page = Page.find(params[:page_id])
-        @parent_element = Element.find_by(id: params[:parent_element_id])
-        @elements = @page.available_elements_within_current_scope(@parent_element)
+        @page = Page.find_by_id(params[:page_id])
         @element = @page.elements.build
+        @elements = @page.available_element_definitions
         @clipboard = get_clipboard('elements')
         @clipboard_items = Element.all_from_clipboard_for_page(@clipboard, @page)
       end
@@ -41,7 +38,7 @@ module Alchemy
             @element = paste_element_from_clipboard
             @cell = @element.cell
           else
-            @element = Element.new_from_scratch(create_element_params)
+            @element = Element.new_from_scratch(params[:element])
             if @page.can_have_cells?
               @cell = find_or_create_cell
               @element.cell = @cell
@@ -75,13 +72,9 @@ module Alchemy
           @element_validated = @element.update_attributes!(element_params)
         else
           @element_validated = false
-          @notice = Alchemy.t('Validation failed')
-          @error_message = "<h2>#{@notice}</h2><p>#{Alchemy.t(:content_validations_headline)}</p>".html_safe
+          @notice = _t('Validation failed')
+          @error_message = "<h2>#{@notice}</h2><p>#{_t(:content_validations_headline)}</p>".html_safe
         end
-      end
-
-      def publish
-        @element.update(public: !@element.public?)
       end
 
       # Trashes the Element instead of deleting it.
@@ -91,20 +84,17 @@ module Alchemy
       end
 
       def order
-        @trashed_element_ids = Element.trashed.where(id: params[:element_ids]).pluck(:id)
-        @parent_element = Element.find_by(id: params[:parent_element_id])
+        @trashed_elements = Element.trashed.where(id: params[:element_ids]).pluck(:id)
         Element.transaction do
-          params.fetch(:element_ids, []).each_with_index do |element_id, idx|
-            # Ensure to set page_id, cell_id and parent_element_id to the current page and
+          params[:element_ids].each_with_index do |element_id, idx|
+            # Ensure to set page_id and cell_id to the current page and
             # cell because of trashed elements could still have old values
             Element.where(id: element_id).update_all(
               page_id: params[:page_id],
               cell_id: params[:cell_id],
-              parent_element_id: params[:parent_element_id],
               position: idx + 1
             )
           end
-          @parent_element.try!(:touch)
         end
       end
 
@@ -147,12 +137,9 @@ module Alchemy
 
       def paste_element_from_clipboard
         @source_element = Element.find(element_from_clipboard['id'])
-        new_attributes = {
-          parent_element_id: create_element_params[:parent_element_id],
-          page_id: @page.id
-        }
+        new_attributes = {:page_id => @page.id}
         if @page.can_have_cells?
-          new_attributes = new_attributes.merge({cell_id: find_or_create_cell.try(:id)})
+          new_attributes = new_attributes.merge({:cell_id => find_or_create_cell.try(:id)})
         end
         element = Element.copy(@source_element, new_attributes)
         if element_from_clipboard['action'] == 'cut'
@@ -172,16 +159,9 @@ module Alchemy
       end
 
       def element_params
-        if @element.taggable?
-          params.fetch(:element, {}).permit(:tag_list)
-        else
-          params.fetch(:element, {})
-        end
+        params.require(:element).permit(:public, :tag_list)
       end
 
-      def create_element_params
-        params.require(:element).permit(:name, :page_id, :parent_element_id)
-      end
     end
   end
 end

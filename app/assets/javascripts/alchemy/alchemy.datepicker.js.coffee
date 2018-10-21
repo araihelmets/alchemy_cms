@@ -3,25 +3,29 @@ window.Alchemy = {} if typeof(window.Alchemy) is 'undefined'
 $.extend Alchemy,
 
   Datepicker: (scope) ->
-    $.datetimepicker.setLocale(Alchemy.locale);
-    $datepicker_inputs = $('input[data-datepicker-type]', scope)
+    browserHasDatepicker = Alchemy.isiOS
+    datepicker_options =
+      dateFormat: "yy-mm-dd"
+      changeMonth: true
+      changeYear: true
+      showWeek: true
+      showButtonPanel: true
+      showOtherMonths: true
+      onSelect: ->
+        Alchemy.setElementDirty $(this).parents("div.element_editor")
 
-    # Initializes the datepickers on the text inputs and sets the proper type
-    # to enable browsers default datepicker if the current OS is iOS.
-    if Alchemy.isiOS
-      $datepicker_inputs.prop "type", ->
-        return $(this).data('datepicker-type')
-    else
-      $datepicker_inputs.each ->
-        type = $(this).data('datepicker-type')
-        options =
-          scrollInput: false
-          format: Alchemy.t("formats.#{type}")
-          timepicker: /time/.test(type)
-          datepicker: /date/.test(type)
-          dayOfWeekStart: Alchemy.t('formats.start_of_week')
-          onSelectDate: ->
-            Alchemy.setElementDirty $(this).closest(".element-editor")
-        $(this).datetimepicker(options)
+    if Alchemy.locale is "de"
+      $.extend datepicker_options,
+        dateFormat: "dd.mm.yy"
+        dayNames: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"]
+        dayNamesMin: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"]
+        monthNames: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
+        monthNamesShort: ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+        closeText: "Ok"
+        currentText: "Heute"
+        weekHeader: "KW"
+        nextText: "nächster"
+        prevText: "vorheriger"
 
-    return
+    # Initializes the jQueryUI datepicker and disables the browsers default Datepicker unless the browser is iOS.
+    $('input[type="date"], input.date', scope).datepicker(datepicker_options).prop "type", "text" unless browserHasDatepicker

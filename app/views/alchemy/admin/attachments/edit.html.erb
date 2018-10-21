@@ -1,10 +1,10 @@
 <%= alchemy_form_for([:admin, @attachment],
-  url: {action: :update, q: search_filter_params[:q], page: params[:page]}) do |f| -%>
+  url: {action: :update, query: params[:query], page: params[:page]}) do |f| -%>
   <%= f.input :name, input_html: {autofocus: true} %>
-  <%= f.input :file_name, input_html: {autofocus: true}, hint: Alchemy.t(:attachment_filename_notice) %>
-  <div class="input string autocomplete_tag_list">
+  <%= f.input :file_name, input_html: {autofocus: true}, hint: _t(:attachment_filename_notice) %>
+  <div class="input string">
     <%= f.label :tag_list %>
     <%= render 'alchemy/admin/partials/autocomplete_tag_list', f: f %>
   </div>
-  <%= f.submit Alchemy.t(:save) %>
+  <%= f.submit _t(:save) %>
 <% end %>

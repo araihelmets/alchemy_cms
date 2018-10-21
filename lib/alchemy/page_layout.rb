@@ -1,23 +1,22 @@
-# frozen_string_literal: true
-
 module Alchemy
   class PageLayout
     class << self
+
       # Returns all page layouts.
       #
       # They are defined in +config/alchemy/page_layout.yml+ file.
       #
       def all
-        @definitions ||= read_definitions_file
+        @definitions ||= read_layouts_file
       end
 
-      # Add additional page definitions to collection.
+      # Add additional page layout definitions to collection.
       #
       # Useful for extending the page layouts from an Alchemy module.
       #
       # === Usage Example
       #
-      #   Call +Alchemy::PageLayout.add(your_definition)+ in your engine.rb file.
+      #   Call +Alchemy::PageLayout.add(your_layout_definition)+ in your engine.rb file.
       #
       # @param [Array || Hash]
       #   You can pass a single layout definition as Hash, or a collection of page layouts as Array.
@@ -33,32 +32,31 @@ module Alchemy
         end
       end
 
-      # Returns one page definition by given name.
+      # Returns one page layout description by given name.
       #
       def get(name)
         return {} if name.blank?
-        all.detect { |a| a['name'].casecmp(name).zero? }
+        all.detect { |a| a['name'].downcase == name.downcase }
       end
 
       def get_all_by_attributes(attributes)
         return [] if attributes.blank?
-
-        if attributes.is_a? Hash
+        if attributes.class.name == 'Hash'
           layouts = []
           attributes.stringify_keys.each do |key, value|
-            result = all.select { |l| l.key?(key) && l[key].to_s.casecmp(value.to_s).zero? }
+            result = all.select { |a| a[key].to_s.downcase == value.to_s.downcase if a.has_key?(key) }
             layouts += result unless result.empty?
           end
-          layouts
+          return layouts
         else
-          []
+          return []
         end
       end
 
       # Returns page layouts ready for Rails' select form helper.
       #
       def layouts_for_select(language_id, only_layoutpages = false)
-        @map_array = []
+        @map_array = [[I18n.t('Please choose'), '']]
         mapped_layouts_for_select(selectable_layouts(language_id, only_layoutpages))
       end
 
@@ -85,23 +83,23 @@ module Alchemy
       #
       def selectable_layouts(language_id, only_layoutpages = false)
         @language_id = language_id
-        all.select do |layout|
+        all.select { |layout|
           if only_layoutpages
             layout['layoutpage'] && layout_available?(layout)
           else
             !layout['layoutpage'] && layout_available?(layout)
           end
-        end
+        }
       end
 
       # Returns all names of elements defined in given page layout.
       #
       def element_names_for(page_layout)
-        if definition = get(page_layout)
-          definition.fetch('elements', [])
+        if layout_description = get(page_layout)
+          layout_description.fetch('elements', [])
         else
-          Rails.logger.warn "\n+++ Warning: No layout definition for #{page_layout} found! in page_layouts.yml\n"
-          []
+          Rails.logger.warn "\n+++ Warning: No Layout Description for #{page_layout} found! in page_layouts.yml\n"
+          return []
         end
       end
 
@@ -109,19 +107,19 @@ module Alchemy
       #
       # === Translation example
       #
-      #   en:
+      #   de:
       #     alchemy:
       #       page_layout_names:
-      #         products_overview: Products Overview
+      #         products_overview: Produktübersicht
       #
       # @param [String]
       #   The layout name
       #
       def human_layout_name(layout)
-        Alchemy.t(layout, scope: 'page_layout_names', default: layout.to_s.humanize)
+        I18n.t(layout, scope: 'page_layout_names', default: layout.to_s.humanize)
       end
 
-      private
+    private
 
       # Returns true if the given layout is unique and not already taken or it should be hidden.
       #
@@ -138,7 +136,7 @@ module Alchemy
       # Returns true if one page already has the given layout
       #
       def page_with_layout_existing?(layout)
-        Alchemy::Page.where(page_layout: layout, language_id: @language_id).pluck(:id).any?
+        Page.where(page_layout: layout, language_id: @language_id).pluck(:id).any?
       end
 
       # Returns true if given layout is available for current site.
@@ -152,15 +150,14 @@ module Alchemy
       #     page_layouts: [default_intro]
       #
       def available_on_site?(layout)
-        Alchemy::Site.current.definition.blank? ||
-          Alchemy::Site.current.definition.fetch('page_layouts', []).include?(layout['name'])
+        Site.current.layout_definition.blank? || Site.current.layout_definition.fetch('page_layouts', []).include?(layout['name'])
       end
 
       # Reads the layout definitions from +config/alchemy/page_layouts.yml+.
       #
-      def read_definitions_file
-        if File.exist?(layouts_file_path)
-          YAML.safe_load(ERB.new(File.read(layouts_file_path)).result, YAML_WHITELIST_CLASSES, [], true) || []
+      def read_layouts_file
+        if File.exists?(layouts_file_path)
+          YAML.load(ERB.new(File.read(layouts_file_path)).result) || []
         else
           raise LoadError, "Could not find page_layouts.yml file! Please run `rails generate alchemy:scaffold`"
         end
@@ -180,6 +177,7 @@ module Alchemy
         end
         @map_array
       end
+
     end
   end
 end

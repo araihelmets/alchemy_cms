@@ -1,12 +1,12 @@
 <%= toolbar(
   buttons: [
     {
-      icon: 'info-circle',
-      label: Alchemy.t(:info),
+      icon: 'info',
+      label: _t(:info),
       url: alchemy.dashboard_info_path,
-      title: Alchemy.t(:info),
+      title: _t(:info),
       dialog_options: {
-        title: Alchemy.t(:info),
+        title: _t(:info),
         size: "420x380"
       },
       if_permitted_to: [:info, :alchemy_admin_dashboard],
@@ -19,14 +19,14 @@
 <div id="dashboard">
   <h1>
     <% if @first_time -%>
-    <%= Alchemy.t(:welcome_note, name: current_alchemy_user.try(:name)) %>
+    <%= _t(:welcome_note, name: current_alchemy_user.try(:name)) %>
     <% else -%>
-    <%= Alchemy.t(:welcome_back_note, name: current_alchemy_user.try(:name)) %>
+    <%= _t(:welcome_back_note, name: current_alchemy_user.try(:name)) %>
     <% end -%>
   </h1>
   <% if @last_sign_at %>
   <p>
-    <small><%= Alchemy.t('Your last login was on', time: l(@last_sign_at, format: :'alchemy.default')) %></small>
+    <small><%= _t('Your last login was on', time: l(@last_sign_at)) %></small>
   </p>
   <% end %>
   <div class="column left">
@@ -34,10 +34,9 @@
     <%= render 'recent_pages' %>
   </div>
   <div class="column right">
-    <% if @online_users.try(:any?) %>
+    <% if @online_users %>
       <%= render 'users' %>
     <% end %>
-
     <% if multi_site? %>
       <%= render 'sites' %>
     <% end %>

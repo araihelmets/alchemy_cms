@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 require 'cancan/matchers'
 
@@ -11,12 +9,12 @@ describe Alchemy::Permissions do
   let(:restricted_attachment)   { mock_model(Alchemy::Attachment, restricted?: true) }
   let(:picture)                 { mock_model(Alchemy::Picture, restricted?: false) }
   let(:restricted_picture)      { mock_model(Alchemy::Picture, restricted?: true) }
-  let(:public_page)             { build_stubbed(:alchemy_page, :public, restricted: false) }
-  let(:unpublic_page)           { build_stubbed(:alchemy_page) }
-  let(:visible_page)            { build_stubbed(:alchemy_page, restricted: false, visible: true) }
-  let(:not_visible_page)        { build_stubbed(:alchemy_page, :public, restricted: false, visible: false) }
-  let(:restricted_page)         { build_stubbed(:alchemy_page, :public, restricted: true) }
-  let(:visible_restricted_page) { build_stubbed(:alchemy_page, visible: true, restricted: true) }
+  let(:public_page)             { build_stubbed(:public_page, restricted: false) }
+  let(:unpublic_page)           { build_stubbed(:page, public: false) }
+  let(:visible_page)            { build_stubbed(:page, restricted: false, visible: true) }
+  let(:not_visible_page)        { build_stubbed(:public_page, restricted: false, visible: false) }
+  let(:restricted_page)         { build_stubbed(:public_page, public: true, restricted: true) }
+  let(:visible_restricted_page) { build_stubbed(:page, visible: true, restricted: true) }
   let(:published_element)       { mock_model(Alchemy::Element, restricted?: false, public?: true, trashed?: false) }
   let(:restricted_element)      { mock_model(Alchemy::Element, restricted?: true, public?: true, trashed?: false) }
   let(:published_content)       { mock_model(Alchemy::Content, restricted?: false, public?: true, trashed?: false) }
@@ -33,6 +31,15 @@ describe Alchemy::Permissions do
     it "can only see not restricted attachments" do
       is_expected.to be_able_to(:show, attachment)
       is_expected.not_to be_able_to(:show, restricted_attachment)
+    end
+
+    it "can only see not restricted pictures" do
+      is_expected.to be_able_to(:show, picture)
+      is_expected.to be_able_to(:thumbnail, picture)
+      is_expected.to be_able_to(:zoom, picture)
+      is_expected.not_to be_able_to(:show, restricted_picture)
+      is_expected.not_to be_able_to(:thumbnail, restricted_picture)
+      is_expected.not_to be_able_to(:zoom, restricted_picture)
     end
 
     it "can only visit not restricted pages" do
@@ -63,7 +70,7 @@ describe Alchemy::Permissions do
   end
 
   context "A member" do
-    let(:user) { build(:alchemy_dummy_user) }
+    let(:user) { member_user }
 
     it "can download all attachments" do
       is_expected.to be_able_to(:download, attachment)
@@ -73,6 +80,15 @@ describe Alchemy::Permissions do
     it "can see all attachments" do
       is_expected.to be_able_to(:show, attachment)
       is_expected.to be_able_to(:show, restricted_attachment)
+    end
+
+    it "can see all pictures" do
+      is_expected.to be_able_to(:show, picture)
+      is_expected.to be_able_to(:thumbnail, picture)
+      is_expected.to be_able_to(:zoom, picture)
+      is_expected.to be_able_to(:show, restricted_picture)
+      is_expected.to be_able_to(:thumbnail, restricted_picture)
+      is_expected.to be_able_to(:zoom, restricted_picture)
     end
 
     it "can visit restricted pages" do
@@ -107,7 +123,7 @@ describe Alchemy::Permissions do
   end
 
   context "An author" do
-    let(:user) { build(:alchemy_dummy_user, :as_author) }
+    let(:user) { author_user }
 
     it "can leave the admin area" do
       is_expected.to be_able_to(:leave, :alchemy_admin)
@@ -116,6 +132,10 @@ describe Alchemy::Permissions do
     it "can visit the dashboard" do
       is_expected.to be_able_to(:index, :alchemy_admin_dashboard)
       is_expected.to be_able_to(:info, :alchemy_admin_dashboard)
+    end
+
+    it "can see picture thumbnails" do
+      is_expected.to be_able_to(:thumbnail, Alchemy::Picture)
     end
 
     it "can edit page content" do
@@ -145,6 +165,7 @@ describe Alchemy::Permissions do
 
     it "can see all pictures" do
       is_expected.to be_able_to(:read, Alchemy::Picture)
+      is_expected.to be_able_to(:info, Alchemy::Picture)
     end
 
     it "can manage contents" do
@@ -175,7 +196,7 @@ describe Alchemy::Permissions do
   end
 
   context "An editor" do
-    let(:user) { build(:alchemy_dummy_user, :as_editor) }
+    let(:user) { editor_user }
 
     it "can manage pages" do
       is_expected.to be_able_to(:copy, Alchemy::Page)
@@ -214,7 +235,7 @@ describe Alchemy::Permissions do
   end
 
   context "An admin" do
-    let(:user) { build(:alchemy_dummy_user, :as_admin) }
+    let(:user) { admin_user }
 
     it "can check for alchemy updates" do
       is_expected.to be_able_to(:update_check, :alchemy_admin_dashboard)
@@ -230,7 +251,7 @@ describe Alchemy::Permissions do
   end
 
   context "A logged in user without a role" do
-    let(:user) { mock_model(Alchemy.user_class, alchemy_roles: []) }
+    let(:user) { mock_user([]) }
 
     it "can only see visible not restricted pages (like the guest role)" do
       is_expected.to be_able_to(:see, visible_page)

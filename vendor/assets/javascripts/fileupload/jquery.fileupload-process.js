@@ -1,5 +1,5 @@
 /*
- * jQuery File Upload Processing Plugin
+ * jQuery File Upload Processing Plugin 1.3.1
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2012, Sebastian Tschan
@@ -12,7 +12,7 @@
 /* jshint nomen:false */
 /* global define, require, window */
 
-;(function (factory) {
+(function (factory) {
     'use strict';
     if (typeof define === 'function' && define.amd) {
         // Register as an anonymous AMD module:
@@ -84,7 +84,7 @@
                         settings
                     );
                 };
-                chain = chain.then(func, settings.always && func);
+                chain = chain.pipe(func, settings.always && func);
             });
             chain
                 .done(function () {
@@ -151,7 +151,7 @@
                         };
                     opts.index = index;
                     that._processing += 1;
-                    that._processingQueue = that._processingQueue.then(func, func)
+                    that._processingQueue = that._processingQueue.pipe(func, func)
                         .always(function () {
                             that._processing -= 1;
                             if (that._processing === 0) {

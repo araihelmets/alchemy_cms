@@ -1,12 +1,10 @@
-# frozen_string_literal: true
-
 # == Schema Information
 #
 # Table name: alchemy_cells
 #
 #  id         :integer          not null, primary key
-#  page_id    :integer          not null
-#  name       :string
+#  page_id    :integer
+#  name       :string(255)
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
 #
@@ -17,20 +15,20 @@
 # Elements are displayed in tabs inside the elements window in page edit view.
 # Every cell is a list of elements with the position scoped to +cell_id+ and +page_id+.
 #
-# Define cells inside a +cells.yml+ file located in the +config/alchemy+ folder of your project.
+# Define cells inside a +cells.yml+ file located in the +config/alchermy+ folder of your project.
 #
 # Render cells with the +render_cell+ helper
 #
 # Views for cells are inside the +app/views/cells+ folder in your project.
 #
 module Alchemy
-  class Cell < BaseRecord
+  class Cell < ActiveRecord::Base
     include Alchemy::Logger
 
-    belongs_to :page, inverse_of: :cells
+    belongs_to :page
     validates_uniqueness_of :name, scope: 'page_id'
     validates_format_of :name, with: /\A[a-z0-9_-]+\z/
-    has_many :elements, -> { where(parent_element_id: nil).order(:position) }, dependent: :destroy
+    has_many :elements, -> { order(:position) }, dependent: :destroy
 
     class << self
       def definitions
@@ -52,13 +50,13 @@ module Alchemy
       end
 
       def translated_label_for(cell_name)
-        Alchemy.t(cell_name, scope: 'cell_names', default: cell_name.to_s.humanize)
+        I18n.t(cell_name, scope: 'cell_names', default: cell_name.to_s.humanize)
       end
 
-      private
+    private
 
       def read_yml_file
-        ::YAML.safe_load(ERB.new(File.read(yml_file_path)).result, YAML_WHITELIST_CLASSES, [], true) || []
+        ::YAML.load(ERB.new(File.read(yml_file_path)).result) || []
       end
 
       def yml_file_path
@@ -73,23 +71,24 @@ module Alchemy
     # Returns the cell definition defined in +config/alchemy/cells.yml+
     #
     def definition
-      definition = self.class.definition_for(name)
+      definition = self.class.definition_for(self.name)
       if definition.blank?
-        log_warning "Could not find cell definition for #{name}. Please check your cells.yml!"
+        log_warning "Could not find cell definition for #{self.name}. Please check your cells.yml!"
         return {}
       else
         definition
       end
     end
+    alias_method :description, :definition
 
     # Returns all elements that can be placed in this cell
-    def element_definitions
+    def available_elements
       definition['elements'] || []
     end
-    alias_method :available_elements, :element_definitions
 
     def name_for_label
-      self.class.translated_label_for(name)
+      self.class.translated_label_for(self.name)
     end
+
   end
 end

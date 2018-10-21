@@ -1,11 +1,9 @@
 <div class="widget">
-  <table class="list">
-    <tr>
-      <th colspan="4"><%= Alchemy.t('Your last updated pages') %></th>
-    </tr>
+  <h2><%= _t('Your last updated pages') %>:</h2>
+  <table>
   <% if @last_edited_pages.blank? %>
     <tr class="even">
-      <td colspan="4"><%= Alchemy.t('no pages') %></td>
+      <td><%= _t('no pages') %></td>
     </tr>
   <% else %>
     <% @last_edited_pages.each do |page| %>
@@ -13,18 +11,8 @@
       <td>
         <%= link_to_if((page.locked_by.blank? || page.locked_by == current_alchemy_user.id), page.name, edit_admin_page_path(page)) %>
       </td>
-      <% if multi_site? %>
       <td>
-        <small><%= page.site_name %></small>
-      </td>
-      <% end %>
-      <td>
-        <% if page.site_languages.many? %>
-        <small><%= page.language.code.upcase %></small>
-        <% end %>
-      </td>
-      <td>
-        <small><%= l(page.updated_at, format: :'alchemy.short_datetime') %></small>
+        <small><%= l(page.updated_at) %></small>
       </td>
     </tr>
     <% end %>

@@ -1,9 +1,0 @@
-<%- cache(element) do -%>
-  <%= element_view_for(element) do |el| -%>
-    <div class="gallery_images">
-      <%- element.nested_elements.available.each do |nested_element| -%>
-        <%= render_element(nested_element) %>
-      <%- end -%>
-    </div>
-  <%- end -%>
-<%- end -%>

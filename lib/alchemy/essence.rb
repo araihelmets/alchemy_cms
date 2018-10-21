@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'active_record'
 
 module Alchemy #:nodoc:
@@ -15,6 +13,7 @@ module Alchemy #:nodoc:
     #   * several getters (ie: page, element, content, ingredient, preview_text)
     #
     module ClassMethods
+
       # Turn any active record model into an essence by calling this class method
       #
       # @option options [String || Symbol] ingredient_column ('body')
@@ -24,25 +23,25 @@ module Alchemy #:nodoc:
       # @option options [String || Symbol] preview_text_column (ingredient_column)
       #   Specify the column for the preview_text method.
       #
-      def acts_as_essence(options = {})
+      def acts_as_essence(options={})
         register_as_essence_association!
 
         configuration = {
           ingredient_column: 'body'
         }.update(options)
 
-        class_eval <<-RUBY, __FILE__, __LINE__ + 1
+        class_eval <<-EOV
           attr_writer :validation_errors
           include Alchemy::Essence::InstanceMethods
           stampable stamper_class_name: Alchemy.user_class_name
-          validate :validate_ingredient, on: :update, if: -> { validations.any? }
+          validate :validate_ingredient, :on => :update, :if => 'validations.any?'
 
-          has_one :content, as: :essence, class_name: "Alchemy::Content"
-          has_one :element, through: :content, class_name: "Alchemy::Element"
-          has_one :page,    through: :element, class_name: "Alchemy::Page"
+          has_one :content, :as => :essence, class_name: "Alchemy::Content"
+          has_one :element, :through => :content, class_name: "Alchemy::Element"
+          has_one :page,    :through => :element, class_name: "Alchemy::Page"
 
           scope :available,    -> { joins(:element).merge(Alchemy::Element.available) }
-          scope :from_element, ->(name) { joins(:element).where(Element.table_name => { name: name }) }
+          scope :from_element, ->(name) { joins(:element).where(alchemy_elements: { name: name }) }
 
           delegate :restricted?, to: :page,    allow_nil: true
           delegate :trashed?,    to: :element, allow_nil: true
@@ -51,7 +50,7 @@ module Alchemy #:nodoc:
           after_update :touch_content
 
           def acts_as_essence_class
-            #{name}
+            #{self.name}
           end
 
           def ingredient_column
@@ -65,12 +64,12 @@ module Alchemy #:nodoc:
           def preview_text_column
             '#{configuration[:preview_text_column] || configuration[:ingredient_column]}'
           end
-        RUBY
+        EOV
       end
 
       # Register the current class as has_many association on +Alchemy::Page+ and +Alchemy::Element+ models
       def register_as_essence_association!
-        klass_name = model_name.to_s
+        klass_name = self.model_name.to_s
         arguments = [:has_many, klass_name.demodulize.tableize.to_sym, through: :contents,
           source: :essence, source_type: klass_name]
         %w(Page Element).each { |k| "Alchemy::#{k}".constantize.send(*arguments) }
@@ -78,6 +77,7 @@ module Alchemy #:nodoc:
     end
 
     module InstanceMethods
+
       # Essence Validations:
       #
       # Essence validations can be set inside the config/elements.yml file.
@@ -124,40 +124,38 @@ module Alchemy #:nodoc:
       def validate_ingredient
         validations.each do |validation|
           if validation.respond_to?(:keys)
-            validation.map do |key, value|
-              send("validate_#{key}", value)
-            end
+            validation.map { |key, _value| self.send("validate_#{key}", validation) }
           else
-            send("validate_#{validation}")
+            self.send("validate_#{validation}")
           end
         end
       end
 
       def validations
-        @validations ||= definition.present? ? definition['validate'] || [] : []
+        @validations ||= description.present? ? description['validate'] || [] : []
       end
 
       def validation_errors
         @validation_errors ||= []
       end
 
-      def validate_presence(validate = true)
-        if validate && ingredient.blank?
+      def validate_presence
+        if ingredient.blank?
           errors.add(ingredient_column, :blank)
           validation_errors << :blank
         end
       end
 
-      def validate_uniqueness(validate = true)
-        return if !validate || !public?
+      def validate_uniqueness
+        return if !public?
         if duplicates.any?
           errors.add(ingredient_column, :taken)
           validation_errors << :taken
         end
       end
 
-      def validate_format(format)
-        matcher = Config.get('format_matchers')[format] || format
+      def validate_format(validation)
+        matcher = Config.get('format_matchers')["#{validation['format']}"] || validation['format']
         if ingredient.to_s.match(Regexp.new(matcher)).nil?
           errors.add(ingredient_column, :invalid)
           validation_errors << :invalid
@@ -168,21 +166,21 @@ module Alchemy #:nodoc:
         acts_as_essence_class
           .available
           .from_element(element.name)
-          .where(ingredient_column.to_s => ingredient)
-          .where.not(id: id)
+          .where("#{ingredient_column}" => ingredient)
+          .where.not(id: self.id)
       end
 
       # Returns the value stored from the database column that is configured as ingredient column.
       def ingredient
-        if respond_to?(ingredient_column)
-          send(ingredient_column)
+        if self.respond_to?(ingredient_column)
+          self.send(ingredient_column)
         end
       end
 
       # Returns the value stored from the database column that is configured as ingredient column.
       def ingredient=(value)
-        if respond_to?(ingredient_setter_method)
-          send(ingredient_setter_method, value)
+        if self.respond_to?(ingredient_setter_method)
+          self.send(ingredient_setter_method, value)
         end
       end
 
@@ -191,10 +189,10 @@ module Alchemy #:nodoc:
         ingredient_column.to_s + '='
       end
 
-      # Essence definition from config/elements.yml
-      def definition
-        return {} if element.nil? || element.content_definitions.nil?
-        element.content_definitions.detect { |c| c['name'] == content.name } || {}
+      # Essence description from config/elements.yml
+      def description
+        return {} if element.nil? or element.content_descriptions.nil?
+        element.content_descriptions.detect { |c| c['name'] == self.content.name } || {}
       end
 
       # Touch content. Called after update.
@@ -206,7 +204,7 @@ module Alchemy #:nodoc:
       # Returns the first x (default 30) characters of ingredient for the Element#preview_text method.
       #
       def preview_text(maxlength = 30)
-        send(preview_text_column).to_s[0..maxlength - 1]
+        self.send(preview_text_column).to_s[0..maxlength-1]
       end
 
       def open_link_in_new_window?
@@ -225,10 +223,8 @@ module Alchemy #:nodoc:
         "alchemy/essences/#{partial_name}_view"
       end
 
-      def has_tinymce?
-        false
-      end
     end
+
   end
 end
 ActiveRecord::Base.class_eval { include Alchemy::Essence } if defined?(Alchemy::Essence)

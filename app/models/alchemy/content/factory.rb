@@ -1,6 +1,5 @@
-# frozen_string_literal: true
-
 module Alchemy
+
   # Holds everything concerning the building and creating of contents and the related essence object.
   #
   module Content::Factory
@@ -14,18 +13,17 @@ module Alchemy
       # @param [Alchemy::Element]
       #   The element the content is for
       # @param [Hash]
-      #   The content definition used for finding the content in +elements.yml+ file
+      #   The content description used for finding the content in +elements.yml+ file
       #
       def build(element, essence_hash)
-        definition = content_definition(element, essence_hash)
-        if definition.blank?
-          raise ContentDefinitionError, "No definition found in elements.yml for #{essence_hash.inspect} and #{element.inspect}"
+        if (description = content_description(element, essence_hash)).blank?
+          raise ContentDefinitionError, "No description found in elements.yml for #{essence_hash.inspect} and #{element.inspect}"
         else
-          new(name: definition['name'], element_id: element.id)
+          new(name: description['name'], element_id: element.id)
         end
       end
 
-      # Creates a new content from elements definition in the +elements.yml+ file.
+      # Creates a new content from elements description in the +elements.yml+ file.
       #
       # 1. It builds the content
       # 2. It creates the essence record (content object gets saved)
@@ -33,45 +31,44 @@ module Alchemy
       # @return [Alchemy::Content]
       #
       def create_from_scratch(element, essence_hash)
+        essence_hash.stringify_keys!
         if content = build(element, essence_hash)
-          content.create_essence!(essence_hash[:essence_type])
+          content.create_essence!(essence_hash['essence_type'])
         end
         content
       end
 
-      # Creates a copy of source and also copies the associated essence.
+      # Makes a copy of source and also copies the associated essence.
       #
       # You can pass a differences hash to update the attributes of the copy.
       #
       # === Example
       #
-      #   @copy = Alchemy::Content.copy(@content, {element_id: 3})
+      #   @copy = Alchemy::Content.copy(@content, {:element_id => 3})
       #   @copy.element_id # => 3
       #
       def copy(source, differences = {})
-        new_content = Content.new(
-          source.attributes.except(*SKIPPED_ATTRIBUTES_ON_COPY).merge(differences)
-        )
-
-        new_essence = new_content.essence.class.create!(
-          new_content.essence.attributes.except(*SKIPPED_ATTRIBUTES_ON_COPY)
-        )
-
-        new_content.update!(essence_id: new_essence.id)
-        new_content
+        attributes = source.attributes.except(*SKIPPED_ATTRIBUTES_ON_COPY).merge(differences.stringify_keys)
+        content = self.create!(attributes)
+        new_essence = content.essence.class.new(content.essence.attributes.except(*SKIPPED_ATTRIBUTES_ON_COPY))
+        new_essence.save!
+        raise "Essence not cloned" if new_essence.id == content.essence_id
+        content.update_attributes(essence_id: new_essence.id)
+        content
       end
 
-      # Returns the content definition for building a content.
+      # Returns the content description for building a content.
       #
-      # 1. It looks in the element's contents definition
-      # 2. It builds a definition hash from essence type, if the the name key is not present
+      # 1. It looks in the element's contents description
+      # 2. It builds a description hash from essence type, if the the name key is not present
       #
-      def content_definition(element, essence_hash)
+      def content_description(element, essence_hash)
+        essence_hash.stringify_keys!
         # No name given. We build the content from essence type.
-        if essence_hash[:name].blank? && essence_hash[:essence_type].present?
-          content_definition_from_essence_type(element, essence_hash[:essence_type])
+        if essence_hash['name'].blank? && essence_hash['essence_type'].present?
+          content_description_from_essence_type(element, essence_hash['essence_type'])
         else
-          element.content_definition_for(essence_hash[:name])
+          content_description_from_element(element, essence_hash['name'])
         end
       end
 
@@ -82,7 +79,7 @@ module Alchemy
       # @param [String]
       #   The essence type the content is from
       #
-      def content_definition_from_essence_type(element, essence_type)
+      def content_description_from_essence_type(element, essence_type)
         {
           'type' => essence_type,
           'name' => content_name_from_element_and_essence_type(element, essence_type)
@@ -100,66 +97,76 @@ module Alchemy
         "#{essence_type.classify.demodulize.underscore}_#{essences_of_same_type.count + 1}"
       end
 
-      # Returns all content definitions from elements.yml
+      # Returns the content description hash from element.
       #
-      def definitions
-        Element.definitions.collect { |e| e['contents'] }.flatten.compact
+      # It first uses the normal content description described in the +elements.yml+ +contents+ array.
+      #
+      # If the content description could not be found it tries to load it from +available_contents+ array.
+      #
+      # @param [Alchemy::Element]
+      #   The element instance the content is for
+      # @param [String]
+      #   The name of the content
+      #
+      def content_description_from_element(element, name)
+        element.content_description_for(name) ||
+          element.available_content_description_for(name)
+      end
+
+      # Returns all content descriptions from elements.yml
+      #
+      def descriptions
+        Element.descriptions.collect { |e| e['contents'] }.flatten.compact
       end
 
       # Returns a normalized Essence type
       #
       # Adds Alchemy module name in front of given essence type
-      # unless there is a Class with the specified name that is an essence.
       #
       # @param [String]
       #   the essence type to normalize
       #
       def normalize_essence_type(essence_type)
         essence_type = essence_type.classify
-        return essence_type if is_an_essence?(essence_type)
-
-        "Alchemy::#{essence_type}"
+        if essence_type.match(/\AAlchemy::/)
+          essence_type
+        else
+          essence_type.gsub!(/\AEssence/, 'Alchemy::Essence')
+        end
       end
 
-      private
-
-      def is_an_essence?(essence_type)
-        klass = Module.const_get(essence_type)
-        klass.is_a?(Class) && klass.new.acts_as_essence?
-      rescue NameError
-        false
-      end
-    end
+    end # end class methods
 
     # Instance Methods
 
-    # Returns the definition hash from +elements.yml+ file.
+    # Returns the description hash from +elements.yml+ file.
     #
-    def definition
+    def description
       if element.blank?
-        log_warning "Content with id #{id} is missing its Element."
+        log_warning "Content with id #{self.id} is missing its Element."
         return {}
       end
-      element.content_definition_for(name) || {}
+      Content.content_description_from_element(element, name) || {}
     end
+    alias_method :definition, :description
 
-    # Creates essence from definition.
+    # Creates essence from description.
     #
     # If an optional type is passed, this type of essence gets created.
     #
     def create_essence!(type = nil)
       self.essence = essence_class(type).create!(prepared_attributes_for_essence)
-      save!
+      self.save!
     end
 
-    private
+  private
 
-    # Returns a class constant from definition's type field.
+    # Returns a class constant from description's type field.
     #
     # If an optional type is passed, this type of essence gets constantized.
     #
     def essence_class(type = nil)
-      Content.normalize_essence_type(type || definition['type']).constantize
+      Content.normalize_essence_type(type || description['type']).constantize
     end
 
     # Prepares the attributes for creating the essence.
@@ -168,9 +175,10 @@ module Alchemy
     #
     def prepared_attributes_for_essence
       attributes = {
-        ingredient: default_text(definition['default'])
+        ingredient: default_text(description['default'])
       }
       attributes
     end
+
   end
 end

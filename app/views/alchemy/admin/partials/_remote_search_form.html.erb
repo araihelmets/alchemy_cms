@@ -1,27 +1,33 @@
-<%= search_form_for @query, url: url_for(
+<%= form_tag(
+  url_for({
     action: 'index',
-    options: options_from_params,
+    options: @options.to_json,
     size: @size
-  ), remote: true, html: {class: 'search_form', id: nil} do |f| %>
+  }),
+  remote: true,
+  method: 'get'
+) do %>
   <%= hidden_field_tag("element_id", @element.blank? ? "" : @element.id) %>
   <%= hidden_field_tag("content_id", @content.blank? ? "" : @content.id) %>
   <div class="search_field">
-    <%= render_icon('search') %>
-    <%= f.search_field resource_handler.search_field_name,
-      placeholder: Alchemy.t(:search),
-      class: 'search_input_field',
-      id: nil %>
-    <%= link_to render_icon(:times, size: 'xs'), url_for(
+  <%= render_icon('search') %>
+    <%= text_field_tag :query,
+      params['query'],
+      class: 'thin_border',
+      id: 'search_input_field',
+      placeholder: _t(:search) %>
+    <%= link_to '', url_for({
         action: 'index',
         element_id: @element.blank? ? '' : @element.id,
         content_id: @content.blank? ? '' : @content.id,
-        options: options_from_params,
+        options: @options.to_json,
         size: @size,
         overlay: true
-      ),
+      }),
       remote: true,
       class: 'search_field_clear',
-      title: Alchemy.t(:click_to_show_all),
-      style: search_filter_params[:q].blank? ? 'display: none' : 'display: block' %>
+      id: 'search_field_clear',
+      title: _t(:click_to_show_all),
+      style: params[:query].nil? ? 'display: none' : 'display: block' %>
   </div>
 <% end %>

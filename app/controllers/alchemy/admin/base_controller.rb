@@ -1,16 +1,12 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Admin
     class BaseController < Alchemy::BaseController
       include Userstamp
-      include Locale
+      include Alchemy::Locale
 
-      before_action { enforce_ssl if ssl_required? && !request.ssl? }
-      before_action :load_locked_pages
+      before_filter { enforce_ssl if ssl_required? && !request.ssl? }
 
-      helper_method :clipboard_empty?, :trash_empty?, :get_clipboard, :is_admin?,
-        :options_from_params
+      helper_method :clipboard_empty?, :trash_empty?, :get_clipboard, :is_admin?
 
       check_authorization
 
@@ -39,24 +35,32 @@ module Alchemy
       end
 
       # Handles exceptions
-      def exception_handler(error)
-        exception_logger(error)
-        show_error_notice(error)
+      def exception_handler(e)
+        exception_logger(e)
+        show_error_notice(e)
         if defined?(Airbrake)
-          notify_airbrake(error) unless Rails.env.development? || Rails.env.test?
+          notify_airbrake(e) unless Rails.env.development? || Rails.env.test?
         end
       end
 
       # Displays an error notice in the Alchemy backend.
-      def show_error_notice(error)
-        @error = error
+      def show_error_notice(e)
+        @error = e
         # truncate the message, because very long error messages (i.e from mysql2) causes cookie overflow errors
-        @notice = error.message[0..255]
-        @trace = error.backtrace[0..50]
+        @notice = e.message[0..255]
+        @trace = e.backtrace[0..50]
         if request.xhr?
-          render action: "error_notice"
+          render :action => "error_notice"
         else
-          render '500', status: 500
+          render '500', :status => 500
+        end
+      end
+
+      def redirect_back_or_to_default(default_path = admin_dashboard_path)
+        if request.referer.present?
+          redirect_to :back
+        else
+          redirect_to default_path
         end
       end
 
@@ -102,7 +106,7 @@ module Alchemy
       #
       def render_errors_or_redirect(object, redirect_url, flash_notice)
         if object.errors.empty?
-          flash[:notice] = Alchemy.t(flash_notice)
+          flash[:notice] = _t(flash_notice)
           do_redirect_to redirect_url
         else
           render action: (params[:action] == 'update' ? 'edit' : 'new')
@@ -110,10 +114,9 @@ module Alchemy
       end
 
       def per_page_value_for_screen_size
-        Alchemy::Deprecation.warn("#per_page_value_for_screen_size is deprecated, please use #items_per_page instead")
-        return items_per_page if session[:screen_size].blank?
+        return 25 if session[:screen_size].blank?
         screen_height = session[:screen_size].split('x').last.to_i
-        (screen_height / 50) - 12
+        (screen_height / 30) - 10
       end
 
       # Does redirects for html and js requests
@@ -128,15 +131,23 @@ module Alchemy
         end
       end
 
-      # Extracts options from params and permits all keys
+      # Extracts options from params.
       #
-      # If no options are present it returns an empty parameters hash.
+      # Helps to parse JSONified options into Hash or Array
       #
-      # @returns [ActionController::Parameters]
       def options_from_params
-        @_options_from_params ||= begin
-          (params[:options] || ActionController::Parameters.new).permit!
-        end
+        case params[:options]
+        when ''
+          {}
+        when String
+          JSON.parse(params[:options])
+        when Hash
+          params[:options]
+        when Array
+          params[:options]
+        else
+          {}
+        end.symbolize_keys
       end
 
       # This method decides if we want to raise an exception or not.
@@ -152,20 +163,6 @@ module Alchemy
         controller_path == 'alchemy/admin/pages' && action_name == 'show'
       end
 
-      def load_locked_pages
-        @locked_pages = Page.locked_by(current_alchemy_user).order(:locked_at)
-      end
-
-      # Returns the current site for admin controllers.
-      #
-      def current_alchemy_site
-        @current_alchemy_site ||= begin
-          site_id = params[:site_id] || session[:alchemy_site_id]
-          site = Site.find_by(id: site_id) || super
-          session[:alchemy_site_id] = site.id
-          site
-        end
-      end
     end
   end
 end

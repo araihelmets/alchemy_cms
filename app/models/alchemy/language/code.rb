@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Alchemy::Language::Code
   extend ActiveSupport::Concern
 
@@ -12,13 +10,13 @@ module Alchemy::Language::Code
   end
 
   module ClassMethods
+
     def find_by_code(code)
       codes = code.split('-')
       codes << '' if codes.length == 1
-      on_current_site.find_by(
-        language_code: codes[0],
-        country_code: codes[1]
-      )
+      find_by_language_code_and_country_code *codes
     end
+
   end
+
 end

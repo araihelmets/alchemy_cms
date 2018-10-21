@@ -1,33 +1,29 @@
 (function() {
-  var $el = $('.element-editor[data-element-id="<%= @element.id %>"]');
+  var $el = $('.element_editor[data-element-id="<%= @element.id %>"]');
 
 <% if @error -%>
 
-  $("#element_<%= @element.id %> .spinner")
-    .replaceWith("<span class='error_icon' title='<%= @error %>'>!</span>");
+  $("#element_<%= @element.id %> .spinner").replaceWith("<span class='error_icon' title='<%= @error %>'>!</span>");
 
 <% else -%>
 
   $el.replaceWith('<%= j render(partial: "element", object: @element) %>');
   $el = $('#element_<%= @element.id %>');
   $('#element_area .sortable_cell').sortable('refresh');
+  Alchemy.ElementEditors.reinit($el);
 
-  <% if @element.folded? -%>
+<% if @element.folded -%>
 
   Alchemy.Tinymce.remove(<%= @element.richtext_contents_ids.to_json %>);
 
-  <% else -%>
+<% else -%>
 
-  $el.trigger('FocusElementEditor.Alchemy');
+  $el.trigger('Alchemy.SelectElementEditor');
+  Alchemy.SelectBox($el);
   Alchemy.Tinymce.init(<%= @element.richtext_contents_ids.to_json %>);
   Alchemy.GUI.initElement($el);
-  Alchemy.SortableElements(
-    <%= @page.id %>,
-    '<%= form_authenticity_token %>',
-    $('> .nestable-elements .nested-elements', $el)
-  );
 
-  <% end -%>
+<% end -%>
 
 <% end -%>
 })();

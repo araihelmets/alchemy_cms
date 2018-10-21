@@ -1,1 +1,3 @@
-<%= Alchemy.t(content.ingredient) unless content.ingredient.nil? -%>
+<%- cache(content) do -%>
+<%= _t(content.ingredient) -%>
+<%- end -%>

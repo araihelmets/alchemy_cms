@@ -1,7 +1,7 @@
-# frozen_string_literal: true
-
 module Alchemy
   class CellSerializer < ActiveModel::Serializer
+    #self.root = false
+
     attributes :id,
       :name,
       :page_id,
@@ -13,5 +13,6 @@ module Alchemy
     def elements
       object.elements.published
     end
+
   end
 end

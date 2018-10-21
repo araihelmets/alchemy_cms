@@ -1,7 +1,6 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Hints
+
     # Returns a hint
     #
     # To add a hint to a content pass +hint: true+ to the element definition in its element.yml
@@ -37,7 +36,7 @@ module Alchemy
     def hint
       hint = definition['hint']
       if hint == true
-        Alchemy.t(name, scope: hint_translation_scope)
+        I18n.t(name, scope: hint_translation_scope)
       else
         hint
       end
@@ -53,5 +52,6 @@ module Alchemy
     def hint_translation_scope
       "#{self.class.model_name.to_s.demodulize.downcase}_hints"
     end
+
   end
 end

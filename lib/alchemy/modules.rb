@@ -1,10 +1,8 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Modules
     mattr_accessor :alchemy_modules
 
-    @@alchemy_modules = YAML.load_file(File.expand_path('../../config/alchemy/modules.yml', __dir__))
+    @@alchemy_modules = YAML.load_file(File.expand_path('../../../config/alchemy/modules.yml', __FILE__))
 
     def self.included(base)
       base.send :helper_method, :alchemy_modules, :module_definition_for
@@ -24,7 +22,7 @@ module Alchemy
     #     }
     #
     def self.register_module(module_definition)
-      @@alchemy_modules << module_definition.deep_stringify_keys
+      @@alchemy_modules << module_definition.stringify_keys
     end
 
     # Get the module definition for given module name
@@ -32,47 +30,46 @@ module Alchemy
     # You can also pass a hash of an module definition.
     # It then tries to find the module defintion from controller name and action name
     #
-    def module_definition_for(name_or_params)
-      case name_or_params
+    def module_definition_for(name)
+      case name
       when String
-        alchemy_modules.detect { |m| m['name'] == name_or_params }
+        alchemy_modules.detect { |p| p['name'] == name }
       when Hash
-        name_or_params.stringify_keys!
         alchemy_modules.detect do |alchemy_module|
-          module_navi = alchemy_module.fetch('navigation', {})
-          definition_from_mainnavi(module_navi, name_or_params) ||
-            definition_from_subnavi(module_navi, name_or_params)
+          definition_from_subnavi(alchemy_module, name.symbolize_keys)
         end
       else
-        raise ArgumentError, "Could not find module definition for #{name_or_params}"
+        raise "Could not find module definition for #{name}"
       end
     end
 
     private
 
-    def definition_from_mainnavi(module_navi, params)
-      controller_matches?(module_navi, params) && action_matches?(module_navi, params)
+    def alchemy_module_navigation(alchemy_module)
+      alchemy_module.stringify_keys!
+      alchemy_module.fetch('navigation', {}).stringify_keys
     end
 
-    def definition_from_subnavi(module_navi, params)
+    def definition_from_subnavi(alchemy_module, name)
+      module_navi = alchemy_module_navigation(alchemy_module)
       subnavi = module_navi['sub_navigation']
       return if subnavi.nil?
-
-      subnavi.any? do |navi|
-        controller_matches?(navi, params) && action_matches?(navi, params)
+      subnavi.map(&:stringify_keys).detect do |subnavi|
+        controller_matches?(subnavi, name) && action_matches?(subnavi, name)
       end
     end
 
-    def controller_matches?(navi, params)
-      remove_slash(navi['controller']) == remove_slash(params['controller'])
+    def controller_matches?(subnavi, name)
+      remove_slash(subnavi['controller']) == remove_slash(name[:controller])
     end
 
-    def action_matches?(navi, params)
-      navi['action'] == params['action']
+    def action_matches?(subnavi, name)
+      subnavi['action'] == name[:action]
     end
 
-    def remove_slash(str)
-      str.gsub(/^\//, '')
+    def remove_slash(name)
+      name.gsub(/^\//, '')
     end
+
   end
 end

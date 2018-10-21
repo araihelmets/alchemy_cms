@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # This is a tableless model used for contact forms.
 #
 # You can specify the fields for your contact form in

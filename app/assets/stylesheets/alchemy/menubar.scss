@@ -2,27 +2,32 @@
  *= require_self
  */
 
+@import "compass/css3";
+@import "sassy-buttons";
 @import "alchemy/variables";
 @import "alchemy/mixins";
+@import "alchemy/extends";
 
 #alchemy_menubar {
   position: fixed;
   top: 0;
-  left: -358px;
+  left: -356px;
   width: 400px;
   z-index: 10000;
-  background: $main-menu-bg-color;
-  transition: left 0.25s cubic-bezier(0.23, 1, 0.32, 1);
-  box-shadow: 0 0 0 1px $white;
-  box-sizing: border-box;
-  height: auto;
-  padding: 8px 40px 8px 8px;
+  background: $light-gray;
+  @include animate-left;
+  @include bottom-right-rounded-border;
+  @include drop-shadow;
+  @include box-sizing(border-box);
+  border-right: $default-border;
+  border-bottom: $default-border;
+  height: 44px;
+  padding: 4px 40px 4px 8px;
   overflow: hidden;
-  font-family: $default-font-family;
-  font-size: $base-font-size;
+  font: $default-font-style;
 
   * {
-    box-sizing: border-box;
+    @include box-sizing(border-box);
     margin: 0;
     padding: 0;
   }
@@ -33,45 +38,41 @@
 
   &:after {
     content: '';
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     position: absolute;
-    right: 10px;
-    top: 50%;
-    background: image-url('alchemy/icon-white.svg') 1px 1px no-repeat;
-    background-size: 24px 24px;
-    transform: translateY(-50%);
+    right: 8px;
+    top: 8px;
+    background: image-url('alchemy/icon.svg') 0 0 no-repeat;
+    background-size: 28px 28px;
   }
 
   ul {
     padding: 0;
     margin: 0;
-    height: 100%;
+    height: auto;
 
     li {
-      width: 33.333%;
-      height: 100%;
-      margin: 0;
-      padding: 0 $default-padding;
+      width: 32%;
+      height: 35px;
+      margin: 0 $default-margin 0 0;
+      padding: 0;
       float: left;
       list-style-type: none;
       text-align: center;
 
       a, button {
-        @include button-defaults(
-          $background-color: $main-menu-bg-color,
-          $hover-color: $blue,
-          $hover-border-color: $white,
-          $border: 1px solid $white,
-          $box-shadow: none,
-          $padding: 0.5em 0,
-          $margin: 0,
-          $color: $white
-        );
+        @extend %button-defaults;
+        padding-left: $default-padding;
+        padding-right: $default-padding;
         width: 100%;
+        display: block;
+        line-height: 14px;
+        font-weight: normal;
         text-decoration: none !important;
         text-transform: none;
-        font-family: $default-font-family;
+        color: $text-color !important;
+        font-family: $default-font-face;
 
         &:after { display: none }
       }

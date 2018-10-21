@@ -9,7 +9,6 @@ class window.Alchemy.Dialog
     title: ''
     modal: true
     overflow: 'visible'
-    draggable: true
     ready: ->
     closed: ->
 
@@ -35,11 +34,10 @@ class window.Alchemy.Dialog
     window.requestAnimationFrame =>
       @dialog_container.addClass('open')
       @overlay.addClass('open') if @overlay?
-    if @options.draggable
-      @dialog.draggable
-        iframeFix: true
-        handle: '.alchemy-dialog-title'
-        containment: 'parent'
+    @dialog.draggable
+      iframeFix: true
+      handle: '.alchemy-dialog-title'
+      containment: 'parent'
     @$body.addClass('prevent-scrolling')
     Alchemy.currentDialogs.push(this)
     @load()
@@ -47,13 +45,11 @@ class window.Alchemy.Dialog
 
   # Closes the Dialog and removes it from the DOM
   close: ->
-    @dialog.trigger 'DialogClose.Alchemy'
     @$document.off 'keydown'
     @dialog_container.removeClass('open')
     @overlay.removeClass('open') if @overlay?
     @$document.on 'webkitTransitionEnd transitionend oTransitionEnd', =>
       @$document.off 'webkitTransitionEnd transitionend oTransitionEnd'
-      Alchemy.Tinymce.removeFrom $('.tinymce', @dialog_body)
       @dialog_container.remove()
       @overlay.remove() if @overlay?
       @$body.removeClass('prevent-scrolling')
@@ -82,7 +78,6 @@ class window.Alchemy.Dialog
     @dialog_body.hide()
     @dialog_body.html(data)
     @init()
-    @dialog.trigger('DialogReady.Alchemy', @dialog_body)
     if @options.ready?
       @options.ready(@dialog_body)
     @dialog_body.show('fade', 200)
@@ -90,7 +85,7 @@ class window.Alchemy.Dialog
 
   # Adds a spinner into Dialog body
   show_spinner: ->
-    @spinner = new Alchemy.Spinner('medium')
+    @spinner = Alchemy.Spinner.medium()
     @spinner.spin(@dialog_body[0])
 
   # Removes the spinner from Dialog body
@@ -100,9 +95,6 @@ class window.Alchemy.Dialog
   # Initializes the Dialog body
   init: ->
     Alchemy.GUI.init(@dialog_body)
-    Alchemy.Tinymce.initWith
-      selector: ".alchemy-dialog-body textarea.tinymce",
-      width: '65%'
     $('#overlay_tabs', @dialog_body).tabs()
     @watch_remote_forms()
 
@@ -140,7 +132,7 @@ class window.Alchemy.Dialog
           error_header = "#{xhr.statusText} (#{xhr.status})"
         error_body = "Please check log and try again."
     $errorDiv = $("<div class=\"message #{error_type}\" />")
-    $errorDiv.append Alchemy.messageIcon(error_type)
+    $errorDiv.append "<span class=\"icon #{error_type}\" />"
     $errorDiv.append "<h1>#{error_header}</h1>"
     $errorDiv.append "<p>#{error_body}</p>"
     @dialog_body.html $errorDiv
@@ -171,7 +163,7 @@ class window.Alchemy.Dialog
     @dialog_body = $('<div class="alchemy-dialog-body" />')
     @dialog_header = $('<div class="alchemy-dialog-header" />')
     @dialog_title = $('<div class="alchemy-dialog-title" />')
-    @close_button = $('<a class="alchemy-dialog-close"><i class="icon fas fa-times fa-fw fa-xs"/></a>')
+    @close_button = $('<a class="alchemy-dialog-close"><span class="icon close small"></span></a>')
     @dialog_title.text(@options.title)
     @dialog_header.append(@dialog_title)
     @dialog_header.append(@close_button)
@@ -250,21 +242,19 @@ window.Alchemy.openDialog = (url, options) ->
 #
 # See Alchemy.Dialog for further options you can add to the data attribute
 #
-window.Alchemy.watchForDialogs = (scope = '#alchemy') ->
-  $(scope).on 'click', '[data-alchemy-dialog]', (event) ->
+window.Alchemy.watchForDialogs = (scope) ->
+  $('a[data-alchemy-dialog]', scope).click (e) ->
     $this = $(this)
     url = $this.attr('href')
     options = $this.data('alchemy-dialog')
     Alchemy.openDialog(url, options)
-    event.preventDefault()
-    return
-  $(scope).on 'click', '[data-alchemy-confirm-delete]', (event) ->
+    false
+  $('a[data-alchemy-confirm-delete]', scope).click (event) ->
     $this = $(this)
     options = $this.data('alchemy-confirm-delete')
     Alchemy.confirmToDeleteDialog($this.attr('href'), options)
-    event.preventDefault()
-    return
-  $(scope).on 'click', '[data-alchemy-confirm]', (event) ->
+    false
+  $('input[data-alchemy-confirm], button[data-alchemy-confirm]', scope).click (event) ->
     options = $(this).data('alchemy-confirm')
     Alchemy.openConfirmDialog options.message, $.extend options,
       ok_label: options.ok_label
@@ -273,15 +263,4 @@ window.Alchemy.watchForDialogs = (scope = '#alchemy') ->
         Alchemy.pleaseWaitOverlay()
         @form.submit()
         return
-    event.preventDefault()
-    return
-
-# Returns a FontAwesome icon for given message type
-#
-window.Alchemy.messageIcon = (messageType) ->
-  icon_class = switch messageType
-    when "warning", "warn", "alert" then "exclamation"
-    when "notice" then "check"
-    when "error" then "bug"
-    else messageType
-  "<i class=\"icon fas fa-#{icon_class} fa-fw\" />"
+    false

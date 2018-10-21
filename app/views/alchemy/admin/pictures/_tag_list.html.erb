@@ -1,15 +1,16 @@
+<% p = params.dup %>
 <% if Alchemy::Picture.tag_counts.any? %>
-  <h3><%= Alchemy.t("Filter by tag") %></h3>
-  <%= js_filter_field '.tag-list li' %>
+  <h2><%= _t("Filter by tag") %></h2>
+  <%= js_filter_field '#tag_list li' %>
   <ul>
-    <%= render_tag_list('Alchemy::Picture') %>
+    <%= render_tag_list('Alchemy::Picture', p) %>
   </ul>
-  <% if search_filter_params[:tagged_with].present? %>
+  <% if p[:tagged_with].present? %>
     <%= link_to(
-      render_icon(:times, size: 'xs') + Alchemy.t('Remove tag filter'),
-      url_for(search_filter_params.except(:tagged_with)),
+      render_icon('delete-small') + _t('Remove tag filter'),
+      url_for(p.delete_if { |k, v| k == "tagged_with" }.merge(action: 'index')),
       remote: request.xhr?,
-      class: 'secondary button small with_icon'
+      class: 'button small with_icon please_wait'
     ) %>
   <% end %>
 <% end %>

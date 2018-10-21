@@ -17,19 +17,23 @@
   - name: headline
     type: EssenceText
     settings:
-      linkable: true
+      deletable: true
   - name: image
     type: EssencePicture
   - name: text
     type: EssenceRichtext
+    settings:
+      deletable: true
+  available_contents:
+  - name: text
+    type: EssenceRichtext
+  - name: headline
+    type: EssenceText
 
 - name: text
   contents:
   - name: text
     type: EssenceRichtext
-
-- name: search
-  contents: []
 
 - name: news
   contents:
@@ -44,6 +48,11 @@
 
 - name: download
   contents:
+  - name: file
+    type: EssenceFile
+    settings:
+      deletable: true
+  available_contents:
   - name: file
     type: EssenceFile
 
@@ -74,63 +83,27 @@
       - presence
 
 - name: all_you_can_eat
-  hint: true
-  taggable: true
   contents:
-    - name: essence_text
-      type: EssenceText
-      hint: true
-    - name: essence_picture
-      type: EssencePicture
-      hint: true
-    - name: essence_richtext
-      type: EssenceRichtext
-      hint: true
-    - name: essence_select
-      type: EssenceSelect
-      hint: true
-      settings:
-        select_values: [A, B, C]
-    - name: essence_boolean
-      type: EssenceBoolean
-      hint: true
-    - name: essence_date
-      type: EssenceDate
-      hint: true
-    - name: essence_file
-      type: EssenceFile
-      hint: true
-    - name: essence_html
-      type: EssenceHtml
-      hint: true
-    - name: essence_link
-      type: EssenceLink
-      hint: true
+  - name: essence_boolean
+    type: EssenceBoolean
+  - name: essence_date
+    type: EssenceDate
+  - name: essence_file
+    type: EssenceFile
+  - name: essence_html
+    type: EssenceHtml
+  - name: essence_link
+    type: EssenceLink
+  - name: essence_picture
+    type: EssencePicture
+  - name: essence_richtext
+    type: EssenceRichtext
+  - name: essence_select
+    type: EssenceSelect
+  - name: essence_text
+    type: EssenceText
 
 - name: <%= 'erb_' + 'element' %>
   contents:
   - name: text
     type: EssenceRichtext
-
-- name: slide
-  compact: true
-  contents:
-    - name: picture
-      type: EssencePicture
-    - name: caption
-      type: EssenceText
-      as_element_title: true
-
-- name: slider
-  nestable_elements:
-    - slide
-
-- name: gallery
-  nestable_elements:
-    - gallery_picture
-
-- name: gallery_picture
-  compact: true
-  contents:
-    - name: picture
-      type: EssencePicture

@@ -1,6 +1,5 @@
-# frozen_string_literal: true
-
 module Alchemy
+
   # ## Alchemy's permissions
   #
   # These are CanCan abilities, but to prevent any naming collusions we named it permissions.
@@ -22,6 +21,7 @@ module Alchemy
   #           # your own rules
   #         end
   #       end
+  #
   #     end
   #
   class Permissions
@@ -36,19 +36,17 @@ module Alchemy
     module GuestUser
       def alchemy_guest_user_rules
         can([:show, :download], Alchemy::Attachment) { |a| !a.restricted? }
-        can :see,               Alchemy::Page,       restricted: false, visible: true
-
-        can :read, Alchemy::Content, Alchemy::Content.available.not_restricted do |c|
+        can :read,              Alchemy::Content,    Alchemy::Content.available.not_restricted do |c|
           c.public? && !c.restricted? && !c.trashed?
         end
-
-        can :read, Alchemy::Element, Alchemy::Element.available.not_restricted do |e|
+        can :read,              Alchemy::Element,    Alchemy::Element.available.not_restricted do |e|
           e.public? && !e.restricted? && !e.trashed?
         end
-
-        can :read, Alchemy::Page, Alchemy::Page.published.not_restricted do |p|
+        can :read,              Alchemy::Page,       Alchemy::Page.published.not_restricted do |p|
           p.public? && !p.restricted?
         end
+        can :see,               Alchemy::Page,       restricted: false, visible: true
+        can(:display,           Alchemy::Picture)    { |p| !p.restricted? }
       end
     end
 
@@ -64,16 +62,18 @@ module Alchemy
 
         # Resources
         can [:show, :download], Alchemy::Attachment
-        can :read,              Alchemy::Page,      Alchemy::Page.published, &:public?
-        can :see,               Alchemy::Page,      restricted: true, visible: true
-
-        can :read, Alchemy::Content, Alchemy::Content.available do |c|
+        can :read,              Alchemy::Content,   Alchemy::Content.available do |c|
           c.public? && !c.trashed?
         end
-
-        can :read, Alchemy::Element, Alchemy::Element.available do |e|
+        can :read,              Alchemy::Element,   Alchemy::Element.available do |e|
           e.public? && !e.trashed?
         end
+        can :read,              Alchemy::Page,      Alchemy::Page.published do |p|
+          p.public?
+        end
+        can :see,               Alchemy::Page,      restricted: true, visible: true
+        can :display,           Alchemy::Picture
+        can [:read, :update],   Alchemy.user_class, id: @user.id
       end
     end
 
@@ -104,7 +104,6 @@ module Alchemy
         can :manage,                :alchemy_admin_clipboard
         can :index,                 :trash
         can :edit,                  :alchemy_admin_layoutpages
-        can :tree,                  :alchemy_admin_pages
 
         # Resources
         can [:read, :download],     Alchemy::Attachment
@@ -113,9 +112,9 @@ module Alchemy
         can :manage,                Alchemy::EssenceFile
         can :manage,                Alchemy::EssencePicture
         can :manage,                Alchemy::LegacyPageUrl
-        can :read,                  Alchemy::Picture
+        can :edit_content,          Alchemy::Page
+        can [:read, :info],         Alchemy::Picture
         can [:read, :autocomplete], Alchemy::Tag
-        can(:edit_content,          Alchemy::Page) { |p| p.editable_by?(@user) }
       end
     end
 
@@ -136,36 +135,24 @@ module Alchemy
         ]
 
         # Controller actions
-        can :clear, :trash
+        can :clear,  :trash
 
         # Resources
         can [
           :copy,
           :copy_language_tree,
+          :create,
+          :destroy,
           :flush,
           :order,
+          :publish,
           :sort,
           :switch_language
         ], Alchemy::Page
-
-        # Resources which may be locked via template permissions
-        #
-        #     # config/alchemy/page_layouts.yml
-        #     - name: contact
-        #       editable_by:
-        #         - freelancer
-        #         - admin
-        #
-        can([
-          :create,
-          :destroy,
-          :publish
-        ], Alchemy::Page) { |p| p.editable_by?(@user) }
-
         can :manage, Alchemy::Picture
         can :manage, Alchemy::Attachment
+        can :read,   Alchemy.user_class
         can :manage, Alchemy::Tag
-        can :index,  Alchemy::Language
       end
     end
 
@@ -180,12 +167,13 @@ module Alchemy
         alchemy_editor_rules
 
         # Navigation
-        can :index,                 [:alchemy_admin_sites, :alchemy_admin_styleguide]
+        can :index,                 [:alchemy_admin_sites]
 
         # Controller actions
         can [:info, :update_check], :alchemy_admin_dashboard
 
         # Resources
+        can :manage,                Alchemy.user_class
         can :manage,                Alchemy::Language
         can :manage,                Alchemy::Site
       end
@@ -215,6 +203,11 @@ module Alchemy
         :unlock,
         :visit,
         to: :edit_content
+
+      alias_action :show,
+        :thumbnail,
+        :zoom,
+        to: :display
     end
 
     # Include the role specific permissions.
@@ -223,5 +216,6 @@ module Alchemy
     include AuthorUser
     include EditorUser
     include AdminUser
+
   end
 end

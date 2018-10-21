@@ -1,34 +1,28 @@
-# frozen_string_literal: true
-
 # == Schema Information
 #
 # Table name: alchemy_pictures
 #
 #  id                :integer          not null, primary key
-#  name              :string
-#  image_file_name   :string
+#  name              :string(255)
+#  image_file_name   :string(255)
 #  image_file_width  :integer
 #  image_file_height :integer
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  creator_id        :integer
 #  updater_id        :integer
-#  upload_hash       :string
+#  upload_hash       :string(255)
 #  cached_tag_list   :text
-#  image_file_uid    :string
+#  image_file_uid    :string(255)
 #  image_file_size   :integer
-#  image_file_format :string
 #
 
 module Alchemy
-  class Picture < BaseRecord
-    CONVERTIBLE_FILE_FORMATS = %w(gif jpg jpeg png).freeze
-
+  class Picture < ActiveRecord::Base
     include Alchemy::NameConversions
-    include Alchemy::Taggable
-    include Alchemy::ContentTouching
+    include Alchemy::Touching
+    include Alchemy::Picture::Sweeping
     include Alchemy::Picture::Transformations
-    include Alchemy::Picture::Url
 
     has_many :essence_pictures, class_name: 'Alchemy::EssencePicture', foreign_key: 'picture_id'
     has_many :contents, through: :essence_pictures
@@ -43,22 +37,16 @@ module Alchemy
     # to ensure this runs before Dragonfly's before_destroy callback.
     #
     before_destroy unless: :deletable? do
-      raise PictureInUseError, Alchemy.t(:cannot_delete_picture_notice) % { name: name }
+      raise PictureInUseError, I18n.t(:cannot_delete_picture_notice) % { name: name }
     end
 
     # Enables Dragonfly image processing
     dragonfly_accessor :image_file, app: :alchemy_pictures do
       # Preprocess after uploading the picture
       after_assign do |p|
-        resize = Config.get(:preprocess_image_resize)
-        p.thumb!(resize) if resize.present?
-      end
-    end
-
-    # We need to define this method here to have it available in the validations below.
-    class << self
-      def allowed_filetypes
-        Config.get(:uploader).fetch('allowed_filetypes', {}).fetch('alchemy/pictures', [])
+        if Config.get(:preprocess_image_resize).present?
+          p.thumb!("#{Config.get(:preprocess_image_resize)}>")
+        end
       end
     end
 
@@ -66,33 +54,51 @@ module Alchemy
     validates_size_of :image_file, maximum: Config.get(:uploader)['file_size_limit'].megabytes
     validates_property :format,
       of: :image_file,
-      in: allowed_filetypes,
+      in: Config.get(:uploader)['allowed_filetypes']['pictures'],
       case_sensitive: false,
-      message: Alchemy.t("not a valid image")
+      message: I18n.t("not a valid image")
+
+    acts_as_taggable
 
     stampable stamper_class_name: Alchemy.user_class_name
 
     scope :named, ->(name) {
-      where("#{table_name}.name LIKE ?", "%#{name}%")
+      where("#{self.table_name}.name LIKE ?", "%#{name}%")
     }
 
     scope :recent, -> {
-      where("#{table_name}.created_at > ?", Time.current - 24.hours).order(:created_at)
+      where("#{self.table_name}.created_at > ?", Time.now - 24.hours).order(:created_at)
     }
 
     scope :deletable, -> {
-      where("#{table_name}.id NOT IN (SELECT picture_id FROM #{EssencePicture.table_name})")
+      where("#{self.table_name}.id NOT IN (SELECT picture_id FROM alchemy_essence_pictures)")
     }
 
     scope :without_tag, -> {
-      left_outer_joins(:taggings).where(gutentag_taggings: {id: nil})
+      where("#{self.table_name}.cached_tag_list IS NULL OR #{self.table_name}.cached_tag_list = ''")
     }
+
+    after_update :touch_contents
 
     # Class methods
 
     class << self
-      def searchable_alchemy_resource_attributes
-        %w(name image_file_name)
+
+      # Returns filtered, paginated and ordered picture collection.
+      def find_paginated(params, per_page)
+        @pictures = Picture.all
+
+        if params[:tagged_with].present?
+          @pictures = @pictures.tagged_with(params[:tagged_with])
+        end
+        if params[:filter].present?
+          @pictures = @pictures.filtered_by(params[:filter])
+        end
+        if params[:query].present?
+          @pictures = @pictures.named(params[:query])
+        end
+
+        @pictures.page(params[:page] || 1).per(per_page).order(:name)
       end
 
       def last_upload
@@ -101,29 +107,11 @@ module Alchemy
         Picture.where(upload_hash: last_picture.upload_hash)
       end
 
-      def search_by(params, query, per_page = nil)
-        pictures = query.result
-
-        if params[:tagged_with].present?
-          pictures = pictures.tagged_with(params[:tagged_with])
-        end
-
-        if params[:filter].present?
-          pictures = pictures.filtered_by(params[:filter])
-        end
-
-        if per_page
-          pictures = pictures.page(params[:page] || 1).per(per_page)
-        end
-
-        pictures.order(:name)
-      end
-
       def filtered_by(filter = '')
         case filter
-        when 'recent'      then recent
-        when 'last_upload' then last_upload
-        when 'without_tag' then without_tag
+          when 'recent'      then recent
+          when 'last_upload' then last_upload
+          when 'without_tag' then without_tag
         else
           all
         end
@@ -131,16 +119,6 @@ module Alchemy
     end
 
     # Instance methods
-
-    def previous(params = {})
-      query = Picture.ransack(params[:q])
-      Picture.search_by(params, query).where("name < ?", name).last
-    end
-
-    def next(params = {})
-      query = Picture.ransack(params[:q])
-      Picture.search_by(params, query).where("name > ?", name).first
-    end
 
     # Updates name and tag_list attributes.
     #
@@ -153,7 +131,7 @@ module Alchemy
         self.name = params[:pictures_name]
       end
       self.tag_list = params[:pictures_tag_list]
-      save!
+      self.save!
     end
 
     # Returns a Hash suitable for jquery fileupload json.
@@ -169,10 +147,10 @@ module Alchemy
     # Returns an uri escaped name.
     #
     def urlname
-      if name.blank?
-        "image_#{id}"
+      if self.name.blank?
+        "image_#{self.id}"
       else
-        ::CGI.escape(name.gsub(/\.(gif|png|jpe?g|tiff?)/i, '').tr('.', ' '))
+        ::CGI.escape(self.name.gsub(/\.(gif|png|jpe?g|tiff?)/i, '').gsub(/\./, ' '))
       end
     end
 
@@ -187,36 +165,6 @@ module Alchemy
     def humanized_name
       return "" if image_file_name.blank?
       convert_to_humanized_name(image_file_name, suffix)
-    end
-
-    # Returns the format the image should be rendered with
-    #
-    # Only returns a format differing from original if an +image_output_format+
-    # is set in config and the image has a convertible file format.
-    #
-    def default_render_format
-      if convertible?
-        Config.get(:image_output_format)
-      else
-        image_file_format
-      end
-    end
-
-    # Returns true if the image can be converted
-    #
-    # If the +image_output_format+ is set to +nil+ or +original+ or the
-    # image has not a convertible file format (i.e. SVG) this returns +false+
-    #
-    def convertible?
-      Config.get(:image_output_format) &&
-        Config.get(:image_output_format) != 'original' &&
-        has_convertible_format?
-    end
-
-    # Returns true if the image can be converted into other formats
-    #
-    def has_convertible_format?
-      image_file_format.in?(CONVERTIBLE_FILE_FORMATS)
     end
 
     # Checks if the picture is restricted.
@@ -234,7 +182,7 @@ module Alchemy
     # Returns true if picture is not assigned to any EssencePicture.
     #
     def deletable?
-      essence_pictures.empty?
+      !essence_pictures.any?
     end
 
     # A size String from original image file values.
@@ -244,7 +192,7 @@ module Alchemy
     # 200 x 100
     #
     def image_file_dimensions
-      "#{image_file_width}x#{image_file_height}"
+      "#{image_file_width} x #{image_file_height}"
     end
 
     # Returns a security token for signed picture rendering requests.
@@ -263,9 +211,10 @@ module Alchemy
       params = params.dup.stringify_keys
       params.update({
         'crop' => params['crop'] ? 'crop' : nil,
-        'id' => id
+        'id' => self.id
       })
       PictureAttributes.secure(params)
     end
+
   end
 end

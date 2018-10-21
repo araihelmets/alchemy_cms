@@ -1,28 +1,27 @@
-# frozen_string_literal: true
-
 # == Schema Information
 #
 # Table name: alchemy_attachments
 #
 #  id              :integer          not null, primary key
-#  name            :string
-#  file_name       :string
-#  file_mime_type  :string
+#  name            :string(255)
+#  file_name       :string(255)
+#  file_mime_type  :string(255)
 #  file_size       :integer
 #  creator_id      :integer
 #  updater_id      :integer
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
 #  cached_tag_list :text
-#  file_uid        :string
+#  file_uid        :string(255)
 #
 
 module Alchemy
-  class Attachment < BaseRecord
+  class Attachment < ActiveRecord::Base
     include Alchemy::Filetypes
     include Alchemy::NameConversions
-    include Alchemy::Taggable
-    include Alchemy::ContentTouching
+    include Alchemy::Touching
+
+    acts_as_taggable
 
     dragonfly_accessor :file, app: :alchemy_attachments do
       after_assign { |f| write_attribute(:file_mime_type, f.mime_type) }
@@ -30,40 +29,38 @@ module Alchemy
 
     stampable stamper_class_name: Alchemy.user_class_name
 
-    has_many :essence_files, class_name: 'Alchemy::EssenceFile', foreign_key: 'attachment_id'
-    has_many :contents, through: :essence_files
-    has_many :elements, through: :contents
-    has_many :pages, through: :elements
-
-    # We need to define this method here to have it available in the validations below.
-    class << self
-      def searchable_alchemy_resource_attributes
-        %w(name file_name)
-      end
-
-      def allowed_filetypes
-        Config.get(:uploader).fetch('allowed_filetypes', {}).fetch('alchemy/attachments', [])
-      end
-
-      def file_types_for_select
-        file_types = Alchemy::Attachment.pluck(:file_mime_type).uniq.map do |type|
-          [Alchemy.t(type, scope: 'mime_types'), type]
-        end
-        file_types.sort_by(&:first)
-      end
-    end
+    has_many :essence_files, :class_name => 'Alchemy::EssenceFile', :foreign_key => 'attachment_id'
+    has_many :contents, :through => :essence_files
+    has_many :elements, :through => :contents
+    has_many :pages, :through => :elements
 
     validates_presence_of :file
+    validates_format_of :file_name, with: /\A[A-Za-z0-9\.\-_]+\z/, on: :update
     validates_size_of :file, maximum: Config.get(:uploader)['file_size_limit'].megabytes
     validates_property :ext, of: :file,
-      in: allowed_filetypes,
+      in: Config.get(:uploader)['allowed_filetypes']['attachments'],
       case_sensitive: false,
-      message: Alchemy.t("not a valid file"),
-      unless: -> { self.class.allowed_filetypes.include?('*') }
+      message: I18n.t("not a valid file"),
+      unless: -> { Config.get(:uploader)['allowed_filetypes']['attachments'].include?('*') }
 
-    before_save :set_name, if: :file_name_changed?
+    before_create do
+      write_attribute(:name, convert_to_humanized_name(self.file_name, self.file.ext))
+      write_attribute(:file_name, sanitized_filename)
+    end
 
-    scope :with_file_type, ->(file_type) { where(file_mime_type: file_type) }
+    after_update :touch_contents
+
+    # Class methods
+
+    class << self
+
+      def find_paginated(params, per_page, order)
+        attachments = Attachment.arel_table
+        cond = attachments[:name].matches("%#{params[:query]}%").or(attachments[:file_name].matches("%#{params[:query]}%"))
+        self.where(cond).page(params[:page] || 1).per(per_page).order(order)
+      end
+
+    end
 
     # Instance methods
 
@@ -75,9 +72,8 @@ module Alchemy
       }
     end
 
-    # An url save filename without format suffix
     def urlname
-      CGI.escape(file_name.gsub(/\.#{extension}$/, '').tr('.', ' '))
+      read_attribute :file_name
     end
 
     # Checks if the attachment is restricted, because it is attached on restricted pages only
@@ -85,7 +81,6 @@ module Alchemy
       pages.any? && pages.not_restricted.blank?
     end
 
-    # File format suffix
     def extension
       file_name.split(".").last
     end
@@ -95,33 +90,40 @@ module Alchemy
     #
     def icon_css_class
       case file_mime_type
-      when "application/pdf"
-        then "file-pdf"
-      when "application/msword"
-        then "file-word"
-      when *TEXT_FILE_TYPES
-        then "file-alt"
-      when *EXCEL_FILE_TYPES
-        then "file-excel"
-      when *VCARD_FILE_TYPES
-        then "address-card"
-      when *ARCHIVE_FILE_TYPES
-        then "file-archive"
-      when *AUDIO_FILE_TYPES
-        then "file-audio"
-      when *IMAGE_FILE_TYPES
-        then "file-image"
-      when *VIDEO_FILE_TYPES
-        then "file-video"
-      else
-        "file"
+        when *ARCHIVE_FILE_TYPES
+          then "archive"
+        when *AUDIO_FILE_TYPES
+          then "audio"
+        when *IMAGE_FILE_TYPES
+          then "image"
+        when *VIDEO_FILE_TYPES
+          then "video"
+        when "application/x-shockwave-flash"
+          then "flash"
+        when "image/x-psd"
+          then "psd"
+        when "text/plain"
+          then "text"
+        when "application/rtf"
+          then "rtf"
+        when "application/pdf"
+          then "pdf"
+        when "application/msword"
+          then "word"
+        when "application/vnd.ms-excel"
+          then "excel"
+        when *VCARD_FILE_TYPES
+          then "vcard"
+        else "file"
       end
     end
 
-    private
-
-    def set_name
-      self.name = convert_to_humanized_name(file_name, file.ext)
+    def sanitized_filename
+      parts = self.file_name.split('.')
+      sfx = parts.pop
+      name = convert_to_urlname(parts.join('-'))
+      "#{name}.#{sfx}"
     end
+
   end
 end

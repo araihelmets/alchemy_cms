@@ -1,9 +1,11 @@
-<%- date_format = content.settings_value(:date_format,
+<%- cache(content) do -%>
+<%- date_format = content_settings_value(content, :date_format,
   local_assigns.fetch(:options, {})) -%>
 <%- if content.ingredient.present? -%>
 <%- if date_format == 'rfc822' -%>
 <%= content.ingredient.to_s(:rfc822) %>
 <%- else -%>
 <%= l(content.ingredient, format: date_format) %>
+<%- end -%>
 <%- end -%>
 <%- end -%>

@@ -1,1 +1,0 @@
-//= require alchemy/templates/spinner

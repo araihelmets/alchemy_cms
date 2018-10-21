@@ -1,46 +1,42 @@
-# frozen_string_literal: true
-
 module Alchemy
   module Admin
-    class PicturesController < Alchemy::Admin::ResourcesController
-      include UploaderResponses
-      include ArchiveOverlay
-
+    class PicturesController < Alchemy::Admin::BaseController
       helper 'alchemy/admin/tags'
 
-      before_action :load_resource,
-        only: [:show, :edit, :update, :destroy, :info]
+      before_action :load_picture,
+        only: [:show, :edit, :update, :info, :destroy]
 
       authorize_resource class: Alchemy::Picture
 
       def index
         @size = params[:size].present? ? params[:size] : 'medium'
-        @query = Picture.ransack(search_filter_params[:q])
-        @pictures = Picture.search_by(
-          search_filter_params,
-          @query,
-          items_per_page
-        )
-
+        @pictures = Picture.find_paginated(params, pictures_per_page_for_size(@size))
         if in_overlay?
           archive_overlay
         end
       end
 
-      def show
-        @previous = @picture.previous(params)
-        @next = @picture.next(params)
-        @assignments = @picture.essence_pictures.joins(content: {element: :page})
-        render action: 'show'
+      def new
+        @picture = Picture.new
+        set_size_or_default
+        if in_overlay?
+          set_instance_variables
+        end
       end
 
       def create
         @picture = Picture.new(picture_params)
         @picture.name = @picture.humanized_name
         if @picture.save
-          render successful_uploader_response(file: @picture)
+          set_size_or_default
+          if in_overlay?
+            set_instance_variables
+          end
+          message = _t('Picture uploaded succesfully', name: @picture.name)
+          render json: {files: [@picture.to_jq_upload], growl_message: message}, status: :created
         else
-          render failed_uploader_response(file: @picture)
+          message = _t('Picture validation error', name: @picture.name)
+          render json: {files: [@picture.to_jq_upload], growl_message: message}, status: :unprocessable_entity
         end
       end
 
@@ -50,18 +46,12 @@ module Alchemy
       end
 
       def update
-        if @picture.update(picture_params)
-          @message = {
-            body: Alchemy.t(:picture_updated_successfully, name: @picture.name),
-            type: 'notice'
-          }
+        if @picture.update_attributes(picture_params)
+          flash[:notice] = _t(:picture_updated_successfully, name: @picture.name)
         else
-          @message = {
-            body: Alchemy.t(:picture_update_failed),
-            type: 'error'
-          }
+          flash[:error] = _t(:picture_update_failed)
         end
-        render :update
+        redirect_to_index
       end
 
       def update_multiple
@@ -69,7 +59,7 @@ module Alchemy
         @pictures.each do |picture|
           picture.update_name_and_tag_list!(params)
         end
-        flash[:notice] = Alchemy.t("Pictures updated successfully")
+        flash[:notice] = _t("Pictures updated successfully")
         redirect_to_index
       end
 
@@ -87,17 +77,14 @@ module Alchemy
             end
           end
           if not_deletable.any?
-            flash[:warn] = Alchemy.t(
-              "These pictures could not be deleted, because they were in use",
-              names: not_deletable.to_sentence
-            )
+            flash[:warn] = _t("These pictures could not be deleted, because they were in use", :names => not_deletable.to_sentence)
           else
-            flash[:notice] = Alchemy.t("Pictures deleted successfully", names: names.to_sentence)
+            flash[:notice] = _t("Pictures deleted successfully", :names => names.to_sentence)
           end
         else
-          flash[:warn] = Alchemy.t("Could not delete Pictures")
+          flash[:warn] = _t("Could not delete Pictures")
         end
-      rescue StandardError => e
+      rescue Exception => e
         flash[:error] = e.message
       ensure
         redirect_to_index
@@ -106,62 +93,76 @@ module Alchemy
       def destroy
         name = @picture.name
         @picture.destroy
-        flash[:notice] = Alchemy.t("Picture deleted successfully", name: name)
-      rescue StandardError => e
+        flash[:notice] = _t("Picture deleted successfully", :name => name)
+      rescue Exception => e
         flash[:error] = e.message
       ensure
-        redirect_to_index
+        do_redirect_to admin_pictures_path(:per_page => params[:per_page], :page => params[:page], :query => params[:query])
       end
 
-      def items_per_page
-        if in_overlay?
-          case params[:size]
-          when 'small' then 25
-          when 'large' then 4
-          else
-            9
-          end
-        else
-          cookies[:alchemy_pictures_per_page] = params[:per_page] ||
-                                                cookies[:alchemy_pictures_per_page] ||
-                                                pictures_per_page_for_size(params[:size])
-        end
-      end
-
-      def items_per_page_options
-        per_page = pictures_per_page_for_size(@size)
-        [per_page, per_page * 2, per_page * 4]
+      def flush
+        FileUtils.rm_rf Rails.root.join('public', Alchemy::MountPoint.get, 'pictures')
+        @notice = _t('Picture cache flushed')
       end
 
       private
 
+      def load_picture
+        @picture = Picture.find(params[:id])
+      end
+
       def pictures_per_page_for_size(size)
         case size
-        when 'small' then 60
-        when 'large' then 12
+        when 'small'
+          per_page = in_overlay? ? 25 : (per_page_value_for_screen_size * 2.9).floor
+        when 'large'
+          per_page = in_overlay? ? 4 : (per_page_value_for_screen_size / 1.7).floor + 1
         else
-          20
+          per_page = in_overlay? ? 9 : (per_page_value_for_screen_size / 1.0).ceil + 4
+        end
+        return per_page
+      end
+
+      def in_overlay?
+        params[:element_id].present?
+      end
+
+      def archive_overlay
+        @content = Content.select('id').find_by(id: params[:content_id])
+        @element = Element.select('id').find_by(id: params[:element_id])
+        @options = options_from_params
+        respond_to do |format|
+          format.html { render partial: 'archive_overlay' }
+          format.js   { render action:  'archive_overlay' }
         end
       end
 
       def redirect_to_index
-        do_redirect_to admin_pictures_path(search_filter_params)
-      end
-
-      def search_filter_params
-        @_search_filter_params ||= params.except(*COMMON_SEARCH_FILTER_EXCLUDES + [:picture_ids]).permit(
-          *common_search_filter_includes + [
-            :size,
-            :element_id,
-            :swap,
-            :content_id
-          ]
+        redirect_to admin_pictures_path(
+          query: params[:query],
+          tagged_with: params[:tagged_with],
+          size: params[:size],
+          filter: params[:filter]
         )
       end
 
       def picture_params
         params.require(:picture).permit(:image_file, :upload_hash, :name, :tag_list)
       end
+
+      def set_size_or_default
+        @size = params[:size] || 'medium'
+      end
+
+      def set_instance_variables
+        @while_assigning = true
+        @content = Content.select('id').find_by(id: params[:content_id])
+        @element = Element.select('id').find_by(id: params[:element_id])
+        @options = options_from_params
+        @page = params[:page] || 1
+        @per_page = pictures_per_page_for_size(@size)
+      end
+
     end
   end
 end

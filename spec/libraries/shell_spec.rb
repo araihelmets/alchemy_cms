@@ -1,15 +1,15 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 require 'alchemy/shell'
 
 module Alchemy
+
   # Class fixture
   class MyToDoList
     extend Shell
   end
 
   describe Shell do
+
     before { allow(MyToDoList).to receive(:puts) }
 
     describe '.todo' do
@@ -98,6 +98,7 @@ module Alchemy
     end
 
     describe '.color' do
+
       context 'if given name is a constant of Thor::Shell::Color' do
         before do
           allow(Thor::Shell::Color).to receive(:const_defined?).and_return(true)
@@ -119,5 +120,6 @@ module Alchemy
         end
       end
     end
+
   end
 end

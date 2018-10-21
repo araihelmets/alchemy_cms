@@ -1,6 +1,5 @@
-# frozen_string_literal: true
-
 module Alchemy
+
   # ActiveRecord scopes for Alchemy::Page
   #
   module Page::PageScopes
@@ -17,23 +16,27 @@ module Alchemy
 
       # All locked pages
       #
-      scope :locked, -> { where.not(locked_at: nil, locked_by: nil) }
+      scope :all_locked, -> { where(locked: true) }
 
       # All pages locked by given user
       #
-      scope :locked_by, ->(user) {
+      scope :all_locked_by, ->(user) {
         if user.class.respond_to? :primary_key
-          locked.where(locked_by: user.send(user.class.primary_key))
+          all_locked.where(locked_by: user.send(user.class.primary_key))
         end
       }
 
       # All not locked pages
       #
-      scope :not_locked, -> { where(locked_at: nil, locked_by: nil) }
+      scope :not_locked, -> { where(locked: false) }
 
       # All visible pages
       #
       scope :visible, -> { where(visible: true) }
+
+      # All public pages
+      #
+      scope :published, -> { where(public: true) }
 
       # All not restricted pages
       #
@@ -47,7 +50,7 @@ module Alchemy
       #
       scope :public_language_roots, -> {
         published.language_roots.where(
-          language_code: Language.published.pluck(:language_code)
+          language_code: Language.published.pluck(:code)
         )
       }
 
@@ -65,23 +68,13 @@ module Alchemy
 
       # Returns all content pages.
       #
-      scope :contentpages, -> {
-        where(layoutpage: [false, nil]).where(Page.arel_table[:parent_id].not_eq(nil))
-      }
+      scope :contentpages, -> { where(layoutpage: [false, nil]).where(Page.arel_table[:parent_id].not_eq(nil)) }
 
       # Returns all public contentpages that are not locked.
       #
       # Used for flushing all pages caches at once.
       #
       scope :flushables, -> { not_locked.published.contentpages }
-
-      # Returns all layoutpages that are not locked.
-      #
-      # Used for flushing all pages caches at once.
-      #
-      scope :flushable_layoutpages, -> {
-        not_locked.layoutpages.where.not(parent_id: Page.unscoped.root.id)
-      }
 
       # All searchable pages
       #
@@ -90,7 +83,7 @@ module Alchemy
       # All pages from +Alchemy::Site.current+
       #
       scope :from_current_site, -> {
-        where(Language.table_name => {site_id: Site.current || Site.default}).joins(:language)
+        where(alchemy_languages: {site_id: Site.current || Site.default}).joins(:language)
       }
 
       # All pages for xml sitemap
@@ -98,22 +91,5 @@ module Alchemy
       scope :sitemap, -> { from_current_site.published.contentpages.where(sitemap: true) }
     end
 
-    module ClassMethods
-      # All public pages
-      #
-      def published
-        where("#{table_name}.public_on <= :time AND " \
-              "(#{table_name}.public_until IS NULL " \
-              "OR #{table_name}.public_until >= :time)", time: Time.current)
-      end
-
-      # All not public pages
-      #
-      def not_public
-        where("#{table_name}.public_on IS NULL OR " \
-              "#{table_name}.public_on >= :time OR " \
-              "#{table_name}.public_until <= :time", time: Time.current)
-      end
-    end
   end
 end

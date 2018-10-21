@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 describe 'alchemy/essences/_essence_text_view' do
@@ -50,4 +48,5 @@ describe 'alchemy/essences/_essence_text_view' do
       end
     end
   end
+
 end

@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Alchemy
   class Admin::LegacyPageUrlsController < Alchemy::Admin::ResourcesController
     before_action :load_page
@@ -36,5 +34,6 @@ module Alchemy
     def legacy_page_url_params
       params.require(:legacy_page_url).permit(:urlname)
     end
+
   end
 end

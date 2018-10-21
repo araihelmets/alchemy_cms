@@ -1,9 +1,8 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 module Alchemy
   describe Tinymce do
+
     describe '.init' do
       subject { Tinymce.init }
 
@@ -22,102 +21,47 @@ module Alchemy
     end
 
     context 'Methods for contents with custom tinymce config.' do
-      let(:content_definition) do
-        {
-          'name' => 'text',
-          'settings' => {
-            'tinymce' => {
-              'foo' => 'bar'
-            }
-          }
-        }
-      end
-
-      let(:element_definition) do
-        {
-          'name' => 'article',
-          'contents' => [content_definition]
-        }
-      end
+      let(:content_definition) { {'name' => 'text', 'settings' => {'tinymce' => {'foo' => 'bar'}}} }
+      let(:element_definition) { {'name' => 'article', 'contents' => [content_definition]} }
 
       describe '.custom_config_contents' do
-        let(:page) { build_stubbed(:alchemy_page) }
-
-        let(:element_definitions) do
-          [element_definition]
-        end
-
-        subject { Tinymce.custom_config_contents(page) }
+        subject { Tinymce.custom_config_contents }
 
         before do
-          expect(page).to receive(:descendent_element_definitions) { element_definitions }
+          allow(Element).to receive(:definitions).and_return([element_definition])
+          # Preventing memoization
+          Tinymce.class_variable_set('@@custom_config_contents', nil)
         end
 
-        it "returns an array of content definitions that contain custom tinymce config
-        and element name" do
+        it "returns an array of content definitions that contain custom tinymce config and element name" do
           is_expected.to be_an(Array)
-          is_expected.to include({
-            'element' => element_definition['name']
-          }.merge(content_definition))
+          is_expected.to include({'element' => element_definition['name']}.merge(content_definition))
         end
 
         context 'with no contents having custom tinymce config' do
-          let(:content_definition) do
-            {'name' => 'text'}
-          end
-
+          let(:content_definition) { {'name' => 'text'} }
           it { is_expected.to eq([]) }
         end
 
         context 'with element definition having nil as contents value' do
-          let(:element_definition) do
-            {
-              'name' => 'element',
-              'contents' => nil
-            }
-          end
+          let(:element_definition) { {'name' => 'element', 'contents' => nil} }
 
           it "returns empty array" do
             is_expected.to eq([])
           end
         end
 
-        context 'with content settings tinymce set to true only' do
-          let(:element_definition) do
-            {
-              'name' => 'element',
-              'contents' => [
-                'name' => 'headline',
-                'settings' => {
-                  'tinymce' => true
-                }
-              ]
-            }
-          end
+        context 'with a page given' do
+          let(:page) { mock_model('Page') }
+          subject { Tinymce.custom_config_contents(page) }
 
-          it "returns empty array" do
-            is_expected.to eq([])
-          end
-        end
-
-        context 'with nestable_elements defined' do
-          let(:element_definitions) do
-            [
-              element_definition,
-              {
-                'name' => 'nested_element',
-                'contents' => [content_definition]
-              }
-            ]
-          end
-
-          it 'includes these configs' do
-            is_expected.to include({
-              'element' => element_definition['name']
-            }.merge(content_definition))
+          it "only returns custom tinymce config for elements of that page" do
+            expect(page).to receive(:element_definitions).and_return([element_definition])
+            is_expected.to include({'element' => element_definition['name']}.merge(content_definition))
           end
         end
       end
     end
+
   end
 end

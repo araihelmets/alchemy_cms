@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 describe 'alchemy/essences/_essence_boolean_editor' do
@@ -8,6 +6,7 @@ describe 'alchemy/essences/_essence_boolean_editor' do
 
   before do
     allow(view).to receive(:render_content_name).and_return(content.name)
+    allow(view).to receive(:delete_content_link).and_return('')
     allow(view).to receive(:render_hint_for).and_return('')
   end
 

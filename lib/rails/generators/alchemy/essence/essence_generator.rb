@@ -4,20 +4,24 @@ module Alchemy
   module Generators
     class EssenceGenerator < ::Rails::Generators::Base
       desc "This generator generates an Alchemy essence for you."
-      argument :essence_name, banner: "YourEssenceName"
-      source_root File.expand_path('templates', __dir__)
+      argument :essence_name, :banner => "YourEssenceName"
+      source_root File.expand_path('templates', File.dirname(__FILE__))
 
       def init
-        @essence_name = essence_name.underscore
-        @essence_view_path = 'app/views/alchemy/essences'
+        @essence_name = Alchemy::Content.normalize_essence_type(essence_name).underscore
+        @essence_view_path = Rails.root.join('app/views/alchemy/essences')
       end
 
       def create_model
         invoke("model", [@essence_name])
       end
 
+      def create_directory
+        empty_directory @essence_view_path
+      end
+
       def act_as_essence
-        essence_class_file = "app/models/#{@essence_name}.rb"
+        essence_class_file = Rails.root.join('app/models', "#{@essence_name}.rb")
         essence_class = @essence_name.classify
         inject_into_class essence_class_file, essence_class, <<-CLASSMETHOD
   acts_as_essence(
@@ -42,6 +46,7 @@ CLASSMETHOD
         say "Then run 'rake db:migrate' to update your database."
         say "Also check the generated view files and alter them to fit your needs."
       end
+
     end
   end
 end

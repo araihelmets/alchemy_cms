@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Alchemy
   module ControllerActions
     extend ActiveSupport::Concern
@@ -51,6 +49,30 @@ module Alchemy
       @current_alchemy_site ||= Site.find_for_host(request.host)
     end
 
+    # Ensures usage of Alchemy's permissions class.
+    #
+    # Merges existing CanCan abilities from host Rails app with Alchemy's own CanCan abilities.
+    #
+    # == Register Abilities
+    #
+    # If your app's CanCan ability class is not named +Ability+ you have to register it.
+    # Or if you have a engine with own CanCan abilities you want to add to Alchemy you must register them first.
+    #
+    #     Alchemy.register_ability MyCustom::Permisson
+    #
+    def current_ability
+      @current_ability ||= begin
+        alchemy_permissions = Alchemy::Permissions.new(current_alchemy_user)
+        Alchemy.registered_abilities.each do |klass|
+          alchemy_permissions.merge(klass.new(current_alchemy_user))
+        end
+        if (Object.const_get('::Ability') rescue false)
+          alchemy_permissions.merge(::Ability.new(current_alchemy_user))
+        end
+        alchemy_permissions
+      end
+    end
+
     # Sets the current site in a cvar so the Language model
     # can be scoped against it.
     #
@@ -67,7 +89,7 @@ module Alchemy
         # find the best language and remember it for later
         @language = load_alchemy_language_from_params ||
                     load_alchemy_language_from_session ||
-                    Language.default
+                    load_default_alchemy_language
       end
       store_current_alchemy_language(@language)
     end
@@ -78,17 +100,19 @@ module Alchemy
       end
     end
 
-    # Load language from session if it's present on current site.
-    # Otherwise return nil so we can load the default language from current site.
     def load_alchemy_language_from_session
       if session[:alchemy_language_id].present?
-        Site.current.languages.find_by(id: session[:alchemy_language_id])
+        Language.find_by(id: session[:alchemy_language_id])
       end
     end
 
     def load_alchemy_language_from_id_or_code(id_or_code)
       Language.find_by(id: id_or_code) ||
-        Language.find_by_code(id_or_code)
+      Language.find_by_code(id_or_code)
+    end
+
+    def load_default_alchemy_language
+      Language.default || raise(DefaultLanguageNotFoundError)
     end
 
     # Stores language's id in the session.
@@ -101,5 +125,6 @@ module Alchemy
         Language.current = language
       end
     end
+
   end
 end

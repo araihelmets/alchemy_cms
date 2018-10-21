@@ -1,12 +1,10 @@
-# frozen_string_literal: true
-
 require 'spec_helper'
 
 describe 'Locale select' do
-  let(:a_page) { create(:alchemy_page, :public) }
+  let(:a_page) { FactoryGirl.create(:public_page) }
   before do
     allow(Alchemy::I18n).to receive(:translation_files).and_return ['alchemy.kl.yml', 'alchemy.jp.yml', 'alchemy.cz.yml']
-    authorize_user(:as_admin)
+    authorize_as_admin
   end
 
   it "contains all locales in a selectbox" do

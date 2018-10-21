@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Alchemy
   module PagesHelper
     include Alchemy::BaseHelper
@@ -23,14 +21,14 @@ module Alchemy
     # @option options reverse [Boolean] (false)
     #   Reverses the ordering of the links.
     #
-    def language_links(options = {})
+    def language_links(options={})
       options = {
         linkname: 'name',
         show_title: true,
         spacer: '',
         reverse: false
       }.merge(options)
-      languages = Language.on_current_site.published.with_root_page.order("name #{options[:reverse] ? 'DESC' : 'ASC'}")
+      languages = Language.published.with_root_page.order("name #{options[:reverse] ? 'DESC' : 'ASC'}")
       return nil if languages.count < 2
       render(
         partial: "alchemy/language_links/language",
@@ -69,7 +67,7 @@ module Alchemy
       render current_alchemy_site
     rescue ActionView::MissingTemplate
       warning("Site layout for #{current_alchemy_site.try(:name)} not found. Please run `rails g alchemy:site_layouts`")
-      ""
+      return ""
     end
 
     # Renders the navigation.
@@ -167,7 +165,7 @@ module Alchemy
       pages = page.children.accessible_by(current_ability, :see)
       pages = pages.restricted if options.delete(:restricted_only)
       if depth = options[:deepness]
-        pages = pages.where('depth <= ?', depth)
+        pages = pages.where("#{Page.table_name}.depth <= #{depth}")
       end
       if options[:reverse]
         pages.reverse!
@@ -198,7 +196,7 @@ module Alchemy
       }
       options = default_options.merge(options)
       if !options[:from_page].nil?
-        while options[:from_page].level > options[:level]
+        while options[:from_page].level > options[:level] do
           options[:from_page] = options[:from_page].parent
         end
         render_navigation(options, html_options)
@@ -209,8 +207,8 @@ module Alchemy
 
     # Returns true if page is in the active branch
     def page_active?(page)
-      @_page_ancestors ||= Page.ancestors_for(@page)
-      @_page_ancestors.include?(page)
+      @breadcrumb ||= breadcrumb(@page)
+      @breadcrumb.include?(page)
     end
 
     # Returns +'active'+ if the given external page is in the current url path or +nil+.
@@ -229,33 +227,30 @@ module Alchemy
     #   restricted_only: false                              # Pass boolean for displaying restricted pages only.
     #   reverse: false                                      # Pass boolean for displaying breadcrumb in reversed reversed.
     #
-    def render_breadcrumb(options = {})
+    def render_breadcrumb(options={})
       options = {
-        separator: ">",
+        separator: %(<span class="separator">&gt;</span>),
         page: @page,
         restricted_only: false,
         reverse: false,
         link_active_page: false
       }.merge(options)
-
-      pages = Page.
-        ancestors_for(options[:page]).
-        accessible_by(current_ability, :see)
-
-      if options.delete(:restricted_only)
-        pages = pages.restricted
-      end
-
-      if options.delete(:reverse)
-        pages = pages.reorder('lft DESC')
-      end
-
+      pages = breadcrumb(options[:page]).accessible_by(current_ability, :see)
+      pages = pages.restricted if options.delete(:restricted_only)
+      pages.to_a.reverse! if options[:reverse]
       if options[:without].present?
-        without = options.delete(:without)
-        pages = pages.where.not(id: without.try(:collect, &:id) || without.id)
+        if options[:without].class == Array
+          pages = pages.to_a - options[:without]
+        else
+          pages.to_a.delete(options[:without])
+        end
       end
-
-      render 'alchemy/breadcrumb/wrapper', pages: pages, options: options
+      render(
+        partial: 'alchemy/breadcrumb/page',
+        collection: pages,
+        spacer_template: 'alchemy/breadcrumb/spacer',
+        locals: {pages: pages, options: options}
+      )
     end
 
     # Returns current page title
@@ -265,11 +260,15 @@ module Alchemy
     #   prefix: ""                 # Prefix
     #   separator: ""              # Separating prefix and title
     #
-    def page_title(options = {})
+    # === Webdevelopers
+    #
+    # Please use the render_meta_data() helper instead. There all important meta information gets rendered in one helper.
+    # So you dont have to worry about anything.
+    #
+    def render_page_title(options = {})
       return "" if @page.title.blank?
       options = {
         prefix: "",
-        suffix: "",
         separator: ""
       }.update(options)
       title_parts = [options[:prefix]]
@@ -278,20 +277,100 @@ module Alchemy
       else
         title_parts << response.status
       end
-      title_parts << options[:suffix]
-      title_parts.reject(&:blank?).join(options[:separator]).html_safe
+      title_parts.join(options[:separator])
     end
 
-    def meta_description
-      @page.meta_description.presence || Language.current_root_page.try(:meta_description)
+    # Returns a complete html <title> tag for the <head> part of the html document.
+    #
+    # === Webdevelopers:
+    #
+    # Please use the render_meta_data() helper. There all important meta information gets rendered in one helper.
+    # So you dont have to worry about anything.
+    #
+    def render_title_tag(options={})
+      default_options = {
+        prefix: "",
+        separator: ""
+      }
+      options = default_options.merge(options)
+      %(<title>#{render_page_title(options)}</title>).html_safe
     end
 
-    def meta_keywords
-      @page.meta_keywords.presence || Language.current_root_page.try(:meta_keywords)
+    # Renders a html <meta> tag for name: "" and content: ""
+    #
+    # === Webdevelopers:
+    #
+    # Please use the render_meta_data() helper. There all important meta information gets rendered in one helper.
+    # So you dont have to worry about anything.
+    #
+    def render_meta_tag(options={})
+      default_options = {
+        name: "",
+        default_language: "de",
+        content: ""
+      }
+      options = default_options.merge(options)
+      lang = (@page.language.blank? ? options[:default_language] : @page.language.code)
+      %(<meta name="#{options[:name]}" content="#{options[:content]}" lang="#{lang}">).html_safe
     end
 
-    def meta_robots
-      "#{@page.robot_index? ? '' : 'no'}index, #{@page.robot_follow? ? '' : 'no'}follow"
+    # This helper takes care of all important meta tags for your page.
+    #
+    # The meta data is been taken from the @page.title, @page.meta_description, @page.meta_keywords, @page.updated_at and @page.language database entries managed by the Alchemy user via the Alchemy cockpit.
+    #
+    # Assume that the user has entered following data into the Alchemy cockpit of the Page "home" and that the user wants that the searchengine (aka. google) robot should index the page and should follow all links on this page:
+    #
+    # Title = Homepage
+    # Description = Your page description
+    # Keywords: cms, ruby, rubyonrails, rails, software, development, html, javascript, ajax
+    #
+    # Then placing +render_meta_data(title_prefix: "Company", title_separator: "-")+ into the <head> part of the +pages.html.erb+ layout produces:
+    #
+    #   <meta charset="UTF-8">
+    #   <title>Company - #{@page.title}</title>
+    #   <meta name="description" content="Your page description">
+    #   <meta name="keywords" content="cms, ruby, rubyonrails, rails, software, development, html, javascript, ajax">
+    #   <meta name="created" content="Tue Dec 16 10:21:26 +0100 2008">
+    #   <meta name="robots" content="index, follow">
+    #
+    def render_meta_data options={}
+      if @page.blank?
+        warning("No Page found!")
+        return nil
+      end
+      default_options = {
+        title_prefix: "",
+        title_separator: "",
+        default_lang: "de"
+      }
+      options = default_options.merge(options)
+      # render meta description of the root page from language if the current meta description is empty
+      if @page.meta_description.blank?
+        description = Language.current.pages.published.language_roots.try(:meta_description)
+      else
+        description = @page.meta_description
+      end
+      # render meta keywords of the root page from language if the current meta keywords is empty
+      if @page.meta_keywords.blank?
+        keywords = Language.current.pages.published.language_roots.try(:meta_keywords)
+      else
+        keywords = @page.meta_keywords
+      end
+      robot = "#{@page.robot_index? ? "" : "no"}index, #{@page.robot_follow? ? "" : "no"}follow"
+      meta_string = %(
+        <meta charset="UTF-8">
+        #{render_title_tag(prefix: options[:title_prefix], separator: options[:title_separator])}
+        #{render_meta_tag(name: "description", content: description)}
+        #{render_meta_tag(name: "keywords", content: keywords)}
+        <meta name="created" content="#{@page.updated_at}">
+        <meta name="robots" content="#{robot}">
+      )
+      if @page.contains_feed?
+        meta_string += %(
+          <link rel="alternate" type="application/rss+xml" title="RSS" href="#{show_alchemy_page_url(@page, format: :rss)}">
+        )
+      end
+      return meta_string.html_safe
     end
 
     # Renders the partial for the cell with the given name of the current page.
@@ -302,7 +381,7 @@ module Alchemy
     #   from_page: Alchemy::Page     # Alchemy::Page object from which the elements are rendered from.
     #   locals: Hash                 # Hash of variables that will be available in the partial. Example: {user: var1, product: var2}
     #
-    def render_cell(name, options = {})
+    def render_cell(name, options={})
       default_options = {
         from_page: @page,
         locals: {}
@@ -317,7 +396,16 @@ module Alchemy
     def cell_empty?(name)
       cell = @page.cells.find_by_name(name)
       return true if cell.blank?
-      cell.elements.not_trashed.empty?
+      cell.elements.blank?
     end
+
+    # Include this in your layout file to have element selection magic in the page edit preview window.
+    def alchemy_preview_mode_code
+      if @preview_mode
+        output = javascript_tag("Alchemy = { locale: '#{session[:alchemy_locale]}' };")
+        output += javascript_include_tag("alchemy/preview")
+      end
+    end
+
   end
 end

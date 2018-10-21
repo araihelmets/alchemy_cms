@@ -3,28 +3,39 @@ window.Alchemy = {} if typeof (window.Alchemy) is "undefined"
 $.extend Alchemy,
 
   ElementDirtyObserver: (selector) ->
-    $(selector).find('input[type="text"], select').change (e) =>
-      $content = $(e.target)
-      $content.addClass('dirty')
-      @setElementDirty $content.closest(".element-editor")
-      return
+    $elements = $(selector)
+    $elements.find('input[type="text"], select').change ->
+      $this = $(this)
+      $this.addClass('dirty')
+      Alchemy.setElementDirty $this.parents(".element_editor")
+    $elements.find('.element_foot input[type="checkbox"]').click ->
+      $this = $(this)
+      $this.addClass "dirty"
+      Alchemy.setElementDirty $this.parents(".element_editor")
 
   setElementDirty: (element) ->
     $element = $(element)
-    $element.addClass('dirty')
+    $element
+      .addClass('dirty')
+      .find('.element_head .icon[class*="element_"]')
+      .addClass('element_dirty')
     window.onbeforeunload = @pageUnload
 
   pageUnload: ->
-    Alchemy.t('page_dirty_notice')
+    Alchemy.pleaseWaitOverlay(false)
+    Alchemy._t('page_dirty_notice')
 
   setElementClean: (element) ->
     $element = $(element)
-    $element.removeClass('dirty')
-    $element.find('> .element-content .dirty').removeClass('dirty')
+    $element
+      .removeClass('dirty')
+      .find('.element_foot input[type="checkbox"], input[type="text"], select')
+      .removeClass('dirty')
+    $element.find('.element_head .icon').removeClass('element_dirty')
     window.onbeforeunload = undefined
 
   isPageDirty: ->
-    $('#element_area').find('.element-editor.dirty').length > 0
+    $('#element_area').find('.element_editor.dirty').length > 0
 
   isElementDirty: (element) ->
     $(element).hasClass('dirty')
@@ -36,18 +47,18 @@ $.extend Alchemy,
         $form = $("<form action=\"#{element.action}\" method=\"POST\" style=\"display: none\" />")
         $form.append $(element).find("input")
         $form.appendTo "body"
-        Alchemy.pleaseWaitOverlay()
         $form.submit()
     else if $(element).is("a")
       callback = ->
-        Turbolinks.visit(element.pathname)
+        window.location.href = element.pathname
     if Alchemy.isPageDirty()
-      Alchemy.openConfirmDialog Alchemy.t('page_dirty_notice'),
-        title: Alchemy.t('warning')
-        ok_label: Alchemy.t('ok')
-        cancel_label: Alchemy.t('cancel')
+      Alchemy.openConfirmDialog Alchemy._t('page_dirty_notice'),
+        title: Alchemy._t('warning')
+        ok_label: Alchemy._t('ok')
+        cancel_label: Alchemy._t('cancel')
         on_ok: ->
           window.onbeforeunload = undefined
+          Alchemy.pleaseWaitOverlay()
           callback()
       false
     else

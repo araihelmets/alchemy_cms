@@ -1,21 +1,61 @@
 require 'alchemy/routing_constraints'
 
 Alchemy::Engine.routes.draw do
-  root to: 'pages#index'
+  root :to => 'pages#show'
 
   get '/sitemap.xml' => 'pages#sitemap', format: 'xml'
 
-  scope Alchemy.admin_path, {constraints: Alchemy.admin_constraints} do
-    get '/' => redirect("#{Alchemy.admin_path}/dashboard"), as: :admin
-    get '/dashboard' => 'admin/dashboard#index', as: :admin_dashboard
-    get '/dashboard/info' => 'admin/dashboard#info', as: :dashboard_info
-    get '/help' => 'admin/dashboard#help', as: :help
-    get '/dashboard/update_check' => 'admin/dashboard#update_check', as: :update_check
-    get '/leave' => 'admin/base#leave', as: :leave_admin
+  get '/admin' => redirect('admin/dashboard')
+  get '/admin/dashboard' => 'admin/dashboard#index',
+        :as => :admin_dashboard
+  get '/admin/dashboard/info' => 'admin/dashboard#info',
+        :as => :dashboard_info
+  get '/admin/help' => 'admin/dashboard#help',
+        :as => :help
+  get '/admin/dashboard/update_check' => 'admin/dashboard#update_check',
+        :as => :update_check
+
+  get '/attachment/:id/download(/:name)' => 'attachments#download',
+        :as => :download_attachment
+  get '/attachment/:id/show' => 'attachments#show',
+        :as => :show_attachment
+
+  # Picture urls
+  get "/pictures/:id/show(/:size)(/:crop)(/:crop_from/:crop_size)(/:quality)/:name.:format" => 'pictures#show',
+        :as => :show_picture
+  get '/pictures/:id/zoom/:name.:format' => 'pictures#zoom',
+        :as => :zoom_picture
+  get "/pictures/:id/thumbnails(/:size)(/:crop)(/:crop_from/:crop_size)/:name.:format" => 'pictures#thumbnail',
+        :as => :thumbnail, :defaults => {:format => 'png', :name => "thumbnail"}
+
+  get '/admin/leave' => 'admin/base#leave', :as => :leave_admin
+
+  resources :messages, :only => [:index, :new, :create]
+  resources :elements, :only => :show
+
+  namespace :api, defaults: {format: 'json'} do
+    resources :contents, only: [:index, :show]
+
+    resources :elements, only: [:index, :show] do
+      get '/contents' => 'contents#index', as: 'contents'
+      get '/contents/:name' => 'contents#show', as: 'content'
+    end
+
+    resources :pages, only: [:index] do
+      get 'elements' => 'elements#index', as: 'elements'
+      get 'elements/:named' => 'elements#index', as: 'named_elements'
+    end
+
+    get '/pages/*urlname(.:format)' => 'pages#show', as: 'page'
+    get '/admin/pages/:id(.:format)' => 'pages#show', as: 'preview_page'
   end
 
-  namespace :admin, {path: Alchemy.admin_path, constraints: Alchemy.admin_constraints} do
-    resources :contents, only: [:create]
+  namespace :admin do
+    resources :contents do
+      collection do
+        post :order
+      end
+    end
 
     resources :pages do
       resources :elements
@@ -27,7 +67,6 @@ Alchemy::Engine.routes.draw do
         get :create_language
         get :link
         get :sort
-        get :tree
       end
       member do
         post :unlock
@@ -47,32 +86,32 @@ Alchemy::Engine.routes.draw do
         post :order
       end
       member do
-        patch :publish
         post :fold
         delete :trash
       end
     end
 
-    resources :layoutpages, only: [:index, :edit]
+    resources :layoutpages, :only => [:index, :edit]
 
-    resources :pictures, except: [:new] do
+    resources :pictures do
       collection do
-        post :update_multiple
+        post :flush, :update_multiple
         delete :delete_multiple
         get :edit_multiple
       end
       member do
+        get :info
         delete :remove
       end
     end
 
-    resources :attachments, except: [:new] do
+    resources :attachments do
       member do
         get :download
       end
     end
 
-    resources :essence_pictures, except: [:show, :new, :create] do
+    resources :essence_pictures, :except => [:show, :new, :create] do
       collection do
         put :assign
       end
@@ -81,7 +120,7 @@ Alchemy::Engine.routes.draw do
       end
     end
 
-    resources :essence_files, only: [:edit, :update] do
+    resources :essence_files, :only => [:edit, :update] do
       collection do
         put :assign
       end
@@ -90,7 +129,7 @@ Alchemy::Engine.routes.draw do
     resources :legacy_page_urls
     resources :languages
 
-    resource :clipboard, only: :index, controller: 'clipboard' do
+    resource :clipboard, :only => :index, :controller => 'clipboard' do
       collection do
         get :index
         delete :clear
@@ -99,7 +138,7 @@ Alchemy::Engine.routes.draw do
       end
     end
 
-    resource :trash, only: :index, controller: 'trash' do
+    resource :trash, :only => :index, :controller => 'trash' do
       collection do
         get :index
         delete :clear
@@ -113,40 +152,9 @@ Alchemy::Engine.routes.draw do
     end
 
     resources :sites
-
-    get '/styleguide' => 'styleguide#index'
   end
 
-  get '/attachment/:id/download(/:name)' => 'attachments#download',
-      as: :download_attachment
-  get '/attachment/:id/show' => 'attachments#show',
-      as: :show_attachment
-
-  resources :messages, only: [:index, :new, :create]
-  resources :elements, only: :show
-  resources :contents, only: :show
-
-  namespace :api, defaults: {format: 'json'} do
-    resources :contents, only: [:index, :show]
-
-    resources :elements, only: [:index, :show] do
-      get '/contents' => 'contents#index', as: 'contents'
-      get '/contents/:name' => 'contents#show', as: 'content'
-    end
-
-    resources :pages, only: [:index] do
-      get 'elements' => 'elements#index', as: 'elements'
-      get 'elements/:named' => 'elements#index', as: 'named_elements'
-      collection do
-        get :nested
-      end
-    end
-
-    get '/pages/*urlname(.:format)' => 'pages#show', as: 'page'
-    get '/admin/pages/:id(.:format)' => 'pages#show', as: 'preview_page'
-  end
-
-  get '/:locale' => 'pages#index',
+  get '/:locale' => 'pages#show',
     constraints: {locale: Alchemy::RoutingConstraints::LOCALE_REGEXP},
     as: :show_language_root
 

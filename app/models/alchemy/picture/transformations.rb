@@ -1,14 +1,10 @@
-# frozen_string_literal: true
-
 module Alchemy
+
   # This concern can extend classes that expose image_file, image_file_width and image_file_height.
   # It provides methods for cropping and resizing.
   #
   module Picture::Transformations
     extend ActiveSupport::Concern
-
-    THUMBNAIL_WIDTH = 160
-    THUMBNAIL_HEIGHT = 120
 
     # Returns the default centered image mask for a given size.
     # If the mask is bigger than the image, the mask is scaled down
@@ -40,7 +36,7 @@ module Alchemy
         size = get_base_dimensions
       end
 
-      size = size_when_fitting({width: THUMBNAIL_WIDTH, height: THUMBNAIL_HEIGHT}, size)
+      size = size_when_fitting({width: 111, height: 93}, size)
       "#{size[:width]}x#{size[:height]}"
     end
 
@@ -62,7 +58,7 @@ module Alchemy
     # Returns the rendered resized image using imagemagick directly.
     #
     def resize(size, upsample = false)
-      image_file.thumb(upsample ? size : "#{size}>")
+      self.image_file.thumb(upsample ? size : "#{size}>")
     end
 
     # Given a string with an x, this function returns a Hash with point
@@ -71,7 +67,7 @@ module Alchemy
     def sizes_from_string(string = "0x0")
       string = "0x0" if string.nil? || string.empty?
 
-      raise ArgumentError unless string =~ /(\d*x\d*)/
+      raise ArgumentError unless string.match(/(\d*x\d*)/)
 
       width, height = string.scan(/(\d*)x(\d*)/)[0].map(&:to_i)
 
@@ -114,23 +110,24 @@ module Alchemy
     end
 
     # An Image smaller than dimensions
-    # can not be cropped to given size - unless upsample is true.
+    # can not be cropped to string - unless upsample is true.
     #
     def can_be_cropped_to(string, upsample = false)
+      dimensions = sizes_from_string(string)
       return true if upsample
-      is_bigger_than sizes_from_string(string)
+      is_bigger_than(dimensions)
     end
 
     # Returns true if the class we're included in has a meaningful render_size attribute
     #
     def render_size?
-      respond_to?(:render_size) && render_size.present?
+      self.respond_to?(:render_size) && !self.render_size.nil? && !self.render_size.empty?
     end
 
     # Returns true if the class we're included in has a meaningful crop_size attribute
     #
-    def crop_size?
-      respond_to?(:crop_size) && !crop_size.nil? && !crop_size.empty?
+     def crop_size?
+      self.respond_to?(:crop_size) && !self.crop_size.nil? && !self.crop_size.empty?
     end
 
     private
@@ -205,7 +202,7 @@ module Alchemy
         x1: point[:x],
         y1: point[:y],
         x2: point[:x] + mask[:width],
-        y2: point[:y] + mask[:height]
+        y2: point[:y] + mask[:height],
       }
     end
 
@@ -233,7 +230,7 @@ module Alchemy
       if is_smaller_than(dimensions) && upsample == false
         dimensions = reduce_to_image(dimensions)
       end
-      image_file.thumb("#{dimensions_to_string(dimensions)}#")
+      self.image_file.thumb("#{dimensions_to_string(dimensions)}#")
     end
 
     # Use imagemagick to custom crop an image. Uses -thumbnail for better performance when resizing.
@@ -244,7 +241,7 @@ module Alchemy
 
       resize_argument = "-resize #{dimensions_to_string(dimensions)}"
       resize_argument += ">" unless upsample
-      image_file.convert "#{crop_argument} #{resize_argument}"
+      self.image_file.convert "#{crop_argument} #{resize_argument}"
     end
 
     # Used when centercropping.

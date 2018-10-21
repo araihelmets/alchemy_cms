@@ -1,22 +1,16 @@
-# frozen_string_literal: true
-
 module Alchemy
   class Api::ContentsController < Api::BaseController
+
     # Returns all contents as json object
     #
     # You can either load all or only these for :element_id param
     #
     def index
-      # Fix for cancancan not able to merge multiple AR scopes for logged in users
-      if can? :manage, Alchemy::Content
-        @contents = Content.all
-      else
-        @contents = Content.accessible_by(current_ability, :index)
-      end
+      @contents = Content.accessible_by(current_ability, :index)
       if params[:element_id].present?
         @contents = @contents.where(element_id: params[:element_id])
       end
-      render json: @contents, adapter: :json, root: :contents
+      respond_with @contents
     end
 
     # Returns a json object for content
